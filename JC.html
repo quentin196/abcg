@@ -1,0 +1,3117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>竞猜管理后台</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  :root{
+    --blue:#1890ff; --blue-hover:#40a9ff;
+    --text:#262626; --text-2:#595959; --placeholder:#bfbfbf;
+    --border:#d9d9d9; --border-light:#e8e8e8;
+    --head-bg:#fafafa; --stripe:#fafafa; --row-hover:#e6f7ff;
+  }
+
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB",
+                "Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    font-size:14px; color:var(--text); background:#fff;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- 顶部导航 ---------- */
+  .topbar{ display:flex; align-items:center; gap:34px; padding:16px 24px;
+           border-bottom:1px solid var(--border-light); background:#fff; }
+  .logo{ width:34px; height:34px; border-radius:50%; background:var(--blue);
+         display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .logo svg{ width:19px; height:19px; fill:#fff; }
+  .nav{ display:flex; gap:34px; }
+  .nav-item{ font-size:17px; color:var(--text); cursor:pointer; padding-bottom:2px;
+             border-bottom:2px solid transparent; white-space:nowrap; transition:color .15s; }
+  .nav-item:hover{ color:var(--blue); }
+  .nav-item.active{ color:var(--blue); font-weight:500; border-bottom-color:var(--blue); }
+  .topbar-right{ margin-left:auto; display:flex; align-items:center; gap:11px; flex-shrink:0; }
+  .topbar-right .master-label{ font-weight:500; white-space:nowrap; }
+  .topbar-right .master-hint{ font-size:12px; color:var(--text-2); white-space:nowrap; }
+
+  /* ---------- 页头操作区 ---------- */
+  .page-head{ display:flex; align-items:center; gap:14px; padding:18px 24px 0; flex-wrap:wrap; }
+
+  /* 开关 */
+  .switch{ position:relative; display:inline-block; width:42px; height:22px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider{ position:absolute; inset:0; background:#bfbfbf; border-radius:11px;
+           cursor:pointer; transition:background .2s; }
+  .slider:before{ content:""; position:absolute; width:18px; height:18px; left:2px; top:2px;
+                  background:#fff; border-radius:50%; transition:transform .2s;
+                  box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  .switch input:checked + .slider{ background:var(--blue); }
+  .switch input:checked + .slider:before{ transform:translateX(20px); }
+  .switch input:disabled + .slider{ opacity:.45; cursor:not-allowed; }
+
+  /* ---------- 筛选条 ---------- */
+  .filters{ display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:18px 24px 0; }
+  .fld{ height:36px; padding:0 11px; border:1px solid var(--border); border-radius:3px;
+        background:#fff; font-size:14px; color:var(--text); outline:none;
+        transition:border-color .15s, box-shadow .15s; }
+  .fld::placeholder{ color:var(--placeholder); }
+  .fld:hover{ border-color:var(--blue-hover); }
+  .fld:focus{ border-color:var(--blue); box-shadow:0 0 0 2px rgba(24,144,255,.12); }
+  .f-date{ width:180px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23bfbfbf' stroke-width='2'><rect x='3' y='5' width='18' height='16' rx='2'/><path d='M3 10h18M8 3v4M16 3v4'/></svg>");
+    background-repeat:no-repeat; background-position:right 10px center; background-size:16px; }
+  .f-date.left{ border-radius:0 3px 3px 0; border-left:none; }
+  .f-kw{ width:190px; }
+  .f-account{ width:150px; }
+  .tilde{ color:var(--text-2); padding:0 2px; }
+
+  .sel{ height:36px; padding:0 30px 0 11px; border:1px solid var(--border); border-radius:3px;
+        background:#fff; font-size:14px; color:var(--text); outline:none; cursor:pointer; appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23bfbfbf' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat; background-position:right 9px center; background-size:15px;
+    transition:border-color .15s; }
+  .sel:hover{ border-color:var(--blue-hover); }
+  .sel:focus{ border-color:var(--blue); box-shadow:0 0 0 2px rgba(24,144,255,.12); }
+  .sel.w130{ width:130px; } .sel.w150{ width:150px; } .sel.w180{ width:180px; }
+  .sel.caliber{ width:132px; border-radius:3px 0 0 3px; border-right:none; background-color:#fafafa; }
+
+  .btn{ height:36px; padding:0 20px; border:1px solid var(--border); border-radius:3px;
+        background:#fff; color:var(--text); font-size:14px; cursor:pointer;
+        white-space:nowrap; font-family:inherit; transition:all .15s; }
+  .btn:hover{ color:var(--blue); border-color:var(--blue); }
+  .btn-primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .btn-primary:hover{ background:var(--blue-hover); border-color:var(--blue-hover); color:#fff; }
+  .btn-sm{ height:30px; padding:0 13px; font-size:13px; }
+  .spacer{ flex:1; }
+
+  /* ---------- 提示条 ---------- */
+  .freshness{ display:flex; align-items:center; gap:7px; margin:16px 24px 0;
+              padding:9px 13px; background:#f6f8fa; border-left:3px solid var(--blue);
+              font-size:13px; color:var(--text-2); }
+  .freshness svg{ width:15px; height:15px; stroke:var(--blue); fill:none; stroke-width:1.8; flex-shrink:0; }
+  .freshness b{ color:var(--text); font-weight:500; }
+
+  /* ---------- 表格 ---------- */
+  .table-wrap{ padding:16px 24px 32px; overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; white-space:nowrap; }
+  thead th{ background:var(--head-bg); padding:13px 16px; text-align:left;
+            font-weight:500; font-size:14px; color:var(--text);
+            border-bottom:1px solid var(--border-light); user-select:none; }
+  th.sortable{ cursor:pointer; }
+  th.sortable:hover{ background:#f0f0f0; }
+  .th-inner{ display:flex; align-items:center; gap:6px; }
+  .caret{ display:flex; flex-direction:column; gap:1px; line-height:0; }
+  .caret i{ width:0; height:0; display:block; border-left:4px solid transparent; border-right:4px solid transparent; }
+  .caret .up{ border-bottom:5px solid #c0c4cc; }
+  .caret .down{ border-top:5px solid #c0c4cc; }
+  th.asc .caret .up{ border-bottom-color:var(--blue); }
+  th.desc .caret .down{ border-top-color:var(--blue); }
+
+  tbody td{ padding:14px 16px; border-bottom:1px solid #f0f0f0; color:var(--text); }
+  tbody tr:nth-child(even){ background:var(--stripe); }
+  tbody tr:hover{ background:var(--row-hover); }
+
+  .num{ font-variant-numeric:tabular-nums; }
+  .link{ color:var(--blue); cursor:pointer; font-variant-numeric:tabular-nums; }
+  .link:hover{ text-decoration:underline; }
+  .link.disabled{ color:var(--placeholder); cursor:not-allowed; text-decoration:none; }
+  .tag-risk{ color:#cf1322; } .tag-high{ color:#d46b08; }
+  .two-line{ line-height:1.55; }
+  .sub{ color:var(--text-2); font-size:13px; }
+
+  tfoot td{ padding:13px 16px; background:#fafafa; border-bottom:1px solid #f0f0f0;
+            font-weight:500; font-variant-numeric:tabular-nums; }
+  tfoot .label{ color:var(--text-2); font-weight:400; }
+
+  .ops{ display:flex; align-items:center; gap:9px; }
+  .ops .link{ font-variant-numeric:normal; }
+  .ops .sep{ color:var(--border); }
+  .op-danger{ color:#cf1322; cursor:pointer; }
+  .op-danger:hover{ text-decoration:underline; }
+
+  .pill{ display:inline-block; padding:2px 9px; border-radius:10px; font-size:12px; white-space:nowrap; }
+  .pill-done{ background:#f6ffed; color:#389e0d; border:1px solid #b7eb8f; }
+  .pill-wait{ background:#fffbe6; color:#d48806; border:1px solid #ffe58f; }
+  .pill-run { background:#e6f7ff; color:#096dd9; border:1px solid #91d5ff; }
+  .pill-off { background:#fafafa; color:#8c8c8c; border:1px solid #d9d9d9; }
+  .pill-end { background:#f9f0ff; color:#722ed1; border:1px solid #d3adf7; }
+  .pill-draft{ background:#fff; color:#8c8c8c; border:1px dashed #bfbfbf; }
+
+  /* ---------- 分页 ---------- */
+  .pager{ display:flex; align-items:center; justify-content:flex-end; gap:8px; padding:16px 24px 0; }
+  .pager-total{ color:var(--text-2); margin-right:8px; }
+  .pg{ min-width:32px; height:32px; padding:0 6px; border:1px solid var(--border);
+       border-radius:3px; background:#fff; color:var(--text); font-size:14px;
+       cursor:pointer; font-family:inherit; }
+  .pg:hover{ color:var(--blue); border-color:var(--blue); }
+  .pg.active{ background:var(--blue); border-color:var(--blue); color:#fff; }
+
+  /* ---------- 弹窗 ---------- */
+  .mask{ position:fixed; inset:0; background:rgba(0,0,0,.45); display:none;
+         align-items:center; justify-content:center; z-index:1000; padding:24px; }
+  /* 弹窗分层：L1 主弹窗 / L2 子弹窗 / L3 二次确认 */
+  .mask.lv2{ z-index:1100; background:rgba(0,0,0,.25); }
+  .mask.lv3{ z-index:1200; background:rgba(0,0,0,.25); }
+  .mask.show{ display:flex; }
+  .modal{ background:#fff; border-radius:4px; box-shadow:0 6px 20px rgba(0,0,0,.16);
+          max-height:90vh; display:flex; flex-direction:column; }
+  .modal.sm{ width:600px; max-width:100%; }
+  .modal.md{ width:840px; max-width:100%; }
+  .modal.lg{ width:1120px; max-width:100%; }
+  .modal-hd{ padding:16px 24px; border-bottom:1px solid var(--border-light);
+             display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .modal-title{ font-size:16px; font-weight:500; }
+  .modal-sub{ font-size:13px; color:var(--text-2); margin-top:3px; }
+  .close{ border:none; background:none; font-size:20px; color:#8c8c8c; cursor:pointer; line-height:1; }
+  .close:hover{ color:var(--text); }
+  .modal-bd{ padding:20px 24px; overflow:auto; }
+  .modal-ft{ padding:12px 24px; border-top:1px solid var(--border-light);
+             text-align:right; flex-shrink:0; display:flex; justify-content:flex-end; gap:10px; }
+
+  .inner-table{ width:100%; border-collapse:collapse; white-space:nowrap; }
+  .inner-table th{ background:var(--head-bg); padding:11px 14px; text-align:left;
+                   font-weight:500; border-bottom:1px solid var(--border-light); }
+  .inner-table td{ padding:12px 14px; border-bottom:1px solid #f0f0f0; font-variant-numeric:tabular-nums; }
+  .inner-total td{ background:#fafafa; font-weight:500; }
+
+  .note{ margin-top:14px; padding:10px 12px; background:#f6f8fa;
+         border-left:3px solid var(--blue); font-size:13px; color:var(--text-2);
+         line-height:1.6; white-space:normal; }
+  .note.warn{ background:#fffbe6; border-left-color:#faad14; }
+
+  /* ---------- 表单 ---------- */
+  .tabs{ display:flex; gap:2px; border-bottom:1px solid var(--border-light); padding:0 24px; flex-shrink:0; }
+  .tab{ padding:11px 16px; cursor:pointer; font-size:14px; color:var(--text-2);
+        border-bottom:2px solid transparent; white-space:nowrap; }
+  .tab:hover{ color:var(--blue); }
+  .tab.active{ color:var(--blue); font-weight:500; border-bottom-color:var(--blue); }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  .form-row{ display:flex; align-items:flex-start; margin-bottom:18px; }
+  .form-label{ width:150px; flex-shrink:0; padding-top:8px; color:var(--text-2); text-align:right; padding-right:14px; }
+  .form-label .req{ color:#cf1322; margin-right:3px; }
+  .form-ctl{ flex:1; min-width:0; }
+  .form-ctl .fld, .form-ctl .sel{ max-width:100%; }
+  .w-full{ width:100%; }
+  .w-220{ width:220px; }
+  .w-160{ width:160px; }
+  .w-110{ width:110px; }
+  .inline{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .hint{ font-size:12px; color:var(--text-2); margin-top:6px; line-height:1.6; }
+  .radio-group{ display:flex; flex-direction:column; gap:11px; }
+  .radio-item{ display:flex; align-items:flex-start; gap:8px; cursor:pointer; }
+  .radio-item input{ margin-top:3px; accent-color:var(--blue); }
+  .radio-title{ display:block; }
+  .radio-hint{ font-size:12px; color:var(--text-2); margin-top:2px; }
+  textarea.fld{ height:110px; padding:9px 11px; resize:vertical; font-family:inherit; line-height:1.6; }
+  .section-title{ font-weight:500; margin:4px 0 16px; padding-left:10px; border-left:3px solid var(--blue); }
+
+  .empty{ padding:70px 0; text-align:center; color:var(--placeholder); }
+
+
+
+  /* ================= 新增活动弹窗 ================= */
+  .modal.xl{ width:1500px; max-width:97vw; }
+  .editor-cols{ display:flex; gap:0; align-items:flex-start; }
+  .col-l{ flex:1 1 50%; min-width:0; padding-right:34px; }
+  .col-r{ flex:1 1 50%; min-width:0; padding-left:34px; border-left:1px solid var(--border-light); }
+
+  /* 分区标题 */
+  .sec{ display:flex; align-items:center; gap:9px; margin:30px 0 20px; }
+  .sec:first-child{ margin-top:0; }
+  .sec i{ width:4px; height:17px; background:var(--blue); border-radius:1px; }
+  .sec b{ font-size:15px; font-weight:600; }
+
+  /* 字段块（标签在上） */
+  .fb{ margin-bottom:20px; }
+  .fb-label{ margin-bottom:9px; font-weight:500; }
+  .fb-label .req{ color:#cf1322; margin-right:2px; }
+  .help{ display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px;
+         border-radius:50%; background:#bfbfbf; color:#fff; font-size:11px; margin-left:4px; cursor:help; }
+  .err{ color:#cf1322; font-size:13px; margin-top:6px; }
+  .fb-hint{ color:var(--text-2); font-size:13px; margin-top:6px; line-height:1.7; }
+
+  /* 语言标签栏 */
+  .lang-bar{ display:flex; gap:22px; border-bottom:1px solid var(--border-light); margin-bottom:14px; }
+  .lang-bar span{ padding:7px 0; cursor:pointer; color:var(--text-2); border-bottom:2px solid transparent; }
+  .lang-bar span:hover{ color:var(--blue); }
+  .lang-bar span.on{ color:var(--blue); border-bottom-color:var(--blue); }
+
+  /* 日期区间 + 长期 */
+  .drow{ display:flex; align-items:center; gap:10px; }
+  .range{ display:flex; align-items:center; flex:1; min-width:0;
+          border:1px solid var(--border); border-radius:3px; overflow:hidden; background:#fff; }
+  .range input{ flex:1; min-width:0; height:34px; border:none; outline:none;
+                padding:0 11px; font-family:inherit; font-size:14px; background:transparent; }
+  .range .dash{ color:var(--text-2); padding:0 3px; }
+  .range.dim{ background:#f5f5f5; }
+  .range.dim input{ color:var(--text-2); }
+  .btn-long{ height:36px; padding:0 20px; border:1px solid var(--blue); border-radius:3px;
+             background:var(--blue); color:#fff; font-size:14px; cursor:pointer; font-family:inherit; flex-shrink:0; }
+  .btn-long.off{ background:#fff; color:var(--text); border-color:var(--border); }
+
+  /* 勾选 / 单选 */
+  .cbs{ display:flex; flex-wrap:wrap; gap:11px 24px; }
+  .cbs.c2 > label{ width:calc(50% - 12px); }
+  .cbs.c3 > label{ width:calc(33.33% - 16px); }
+  .cbs.c6 > label{ width:calc(16.66% - 20px); }
+  .cb{ display:inline-flex; align-items:center; gap:7px; cursor:pointer; line-height:1.5; }
+  .cb input{ accent-color:var(--blue); width:15px; height:15px; flex-shrink:0; }
+  .cb.on{ color:var(--blue); }
+  .rds{ display:flex; flex-wrap:wrap; gap:10px 26px; }
+  .rd{ display:inline-flex; align-items:center; gap:7px; cursor:pointer; }
+  .rd input{ accent-color:var(--blue); width:15px; height:15px; }
+  .rd.on{ color:var(--blue); }
+
+  /* 带数值的勾选行 */
+  .cb-num{ display:flex; align-items:center; gap:10px; margin-bottom:13px; flex-wrap:wrap; }
+  .cb-num .fld{ width:150px; height:34px; }
+  .cb-num .sub{ color:var(--text-2); }
+
+  /* 队伍表 */
+  .team-head{ display:flex; gap:14px; padding:2px 0 12px; }
+  .team-head span:nth-child(1){ width:48px; }
+  .team-head span:nth-child(2){ width:96px; }
+  .team-row{ display:flex; gap:14px; align-items:center; margin-bottom:14px; }
+  .team-row .no{ width:48px; color:var(--text-2); }
+  .team-icon-wrap{ width:96px; }
+  .team-up{ width:52px; height:52px; border:1px dashed var(--border); border-radius:3px;
+            display:flex; align-items:center; justify-content:center; cursor:pointer;
+            color:var(--placeholder); font-size:22px; background:#fff; }
+  .team-up:hover{ border-color:var(--blue); color:var(--blue); }
+  .team-up.filled{ border-style:solid; border-color:var(--border-light); border-radius:50%; font-size:0;
+                   background:linear-gradient(180deg,#fff 0 46%,#d0021b 46% 100%); }
+  .icon-btn{ width:34px; height:34px; border:1px solid var(--border); border-radius:3px;
+             background:#fff; cursor:pointer; font-size:15px; color:var(--text-2); font-family:inherit; flex-shrink:0; }
+  .icon-btn:hover{ border-color:var(--blue); color:var(--blue); }
+  .icon-btn.pri{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .icon-btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .tip-line{ text-align:center; color:var(--text-2); font-size:13px; margin:2px 0 4px; }
+
+  /* 发放对象 */
+  .sub-label{ font-weight:500; margin:16px 0 10px; }
+  .grid-box{ max-height:210px; overflow-y:auto; padding-right:6px; }
+  .acc-area{ width:100%; height:180px; border:1px solid var(--border); border-radius:3px;
+             padding:11px 13px; font-family:inherit; font-size:14px; line-height:1.8;
+             resize:vertical; outline:none; }
+  .acc-area:focus{ border-color:var(--blue); box-shadow:0 0 0 2px rgba(24,144,255,.12); }
+  .acc-foot{ display:flex; justify-content:space-between; margin-top:6px; font-size:13px; }
+  .acc-note{ color:var(--text-2); font-size:13px; line-height:1.8; margin-bottom:10px; }
+
+  /* 稽核倍数 */
+  .audit-row{ display:flex; align-items:center; gap:10px; }
+  .audit-row .fld{ width:150px; }
+  .audit-row .fld.wide{ width:260px; }
+
+
+  
+
+
+  /* ---------- 场馆三级选择器 ---------- */
+  .venue{ margin-top:13px; }
+  .venue-search{ display:flex; align-items:center; border:1px solid var(--border);
+                 border-radius:4px; overflow:hidden; margin-bottom:11px; background:#fff; }
+  .venue-search select{ width:150px; height:40px; border:none; border-right:1px solid var(--border);
+                        outline:none; padding:0 30px 0 13px; font-family:inherit; font-size:14px;
+                        background:#fff; cursor:pointer; appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23595959' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat; background-position:right 9px center; background-size:15px; }
+  .venue-search input{ flex:1; height:40px; border:none; outline:none; padding:0 13px;
+                       font-family:inherit; font-size:14px; }
+  .venue-search button{ width:52px; height:40px; border:none; background:#fff; cursor:pointer; }
+  .venue-search button:hover{ background:#f5f5f5; }
+  .venue-search svg{ width:20px; height:20px; fill:none; stroke:var(--text); stroke-width:2.2; }
+
+  .venue-panel{ border:1px solid var(--border); border-radius:4px; overflow:hidden; background:#fff; }
+  .venue-cols{ display:flex; height:330px; }
+  .vcol{ flex:1; min-width:0; overflow-y:auto; border-right:1px solid var(--border-light); }
+  .vcol:last-child{ border-right:none; }
+  .vcol.cat{ flex:0 0 108px; }
+  .vrow{ display:flex; align-items:center; gap:9px; padding:9px 10px; cursor:pointer; }
+  .vrow:hover{ background:#f5f5f5; }
+  .vrow.on{ background:#e6f7ff; }
+  .vrow input{ accent-color:var(--blue); width:15px; height:15px; flex-shrink:0; }
+  .vrow .ico{ font-size:19px; line-height:1; }
+  .vrow .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .vrow .arw{ color:#bfbfbf; font-size:13px; flex-shrink:0; }
+  .vrow.on .arw{ color:var(--blue); }
+
+  .venue-foot{ display:flex; align-items:center; justify-content:center; gap:9px;
+               padding:10px; border-top:1px solid var(--border-light); background:#fff; font-size:13px; }
+  .venue-foot .cnt{ color:var(--text-2); margin-right:6px; }
+  .venue-foot .pgn{ color:var(--blue); cursor:pointer; padding:0 3px; }
+  .venue-foot .pgn.cur{ color:var(--text); }
+  .venue-foot .pgn:hover{ text-decoration:underline; }
+  .venue-sum{ margin-top:9px; font-size:13px; color:var(--text-2); }
+  .venue-sum b{ color:var(--blue); font-weight:500; }
+
+  /* ---------- 充值渠道 ---------- */
+  .chan-grid{ display:flex; flex-wrap:wrap; gap:12px 0; }
+  .chan-grid > label{ width:16.66%; padding-right:12px; }
+  .chan{ display:inline-flex; align-items:center; gap:7px; cursor:pointer; max-width:100%; }
+  .chan input{ accent-color:var(--blue); width:15px; height:15px; flex-shrink:0; }
+  .chan .txt{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chan.on{ color:var(--blue); }
+  .chan-all{ margin-bottom:14px; }
+
+  .vtip{ position:fixed; z-index:1400; display:none; padding:7px 12px; border-radius:5px;
+         background:#4a4a4a; color:#fff; font-size:13px; white-space:nowrap;
+         pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+  .vtip.show{ display:block; }
+  .vtip:after{ content:""; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
+               border-left:7px solid transparent; border-right:7px solid transparent;
+               border-top:7px solid #4a4a4a; }
+
+  /* ---------- 队伍数量提示 ---------- */
+  .fb-warn{ color:#cf1322; font-size:13px; margin-top:8px; line-height:1.8; }
+  .fb-warn:before{ content:"※ "; }
+  .team-count{ display:inline-flex; align-items:center; gap:6px; margin-left:12px;
+               padding:2px 10px; border-radius:11px; font-size:13px; }
+  .team-count.even{ background:#f6ffed; color:#389e0d; border:1px solid #b7eb8f; }
+  .team-count.odd{ background:#fff1f0; color:#cf1322; border:1px solid #ffa39e; }
+
+  /* ---------- 修正开奖结果 ---------- */
+  .fx-title{ font-weight:600; font-size:15px; margin:0 0 14px; }
+  .fx-title.mt{ margin-top:26px; }
+  .fx-table{ width:100%; border-collapse:collapse; border:1px solid var(--border-light); }
+  .fx-table tr{ border-bottom:1px solid var(--border-light); }
+  .fx-table tr:last-child{ border-bottom:none; }
+  .fx-table th{ width:150px; background:#fafafa; text-align:right; padding:14px 18px;
+                font-weight:400; color:var(--text-2); border-right:1px solid var(--border-light); }
+  .fx-table td{ padding:14px 18px; }
+  .fx-row{ display:flex; align-items:center; margin-bottom:19px; }
+  .fx-lb{ width:190px; flex-shrink:0; text-align:right; padding-right:16px; }
+  .fx-ct{ flex:1; min-width:0; display:flex; align-items:center; gap:36px; }
+  .fx-ct .sel, .fx-ct .fld{ width:100%; max-width:330px; }
+  .fx-ct .fld:disabled{ background:#f5f5f5; color:var(--placeholder); }
+  .fx-warn{ display:flex; align-items:center; justify-content:center; gap:7px;
+            color:#cf1322; margin:22px 0 4px; }
+  .fx-warn svg{ width:16px; height:16px; fill:none; stroke:#cf1322; stroke-width:2; flex-shrink:0; }
+
+
+  /* 已发布锁定提示 */
+  .lock-tip{ display:flex; align-items:flex-start; gap:9px; padding:12px 15px; margin-bottom:22px;
+             background:#fff1f0; border:1px solid #ffccc7; border-radius:3px;
+             color:#cf1322; font-size:13px; line-height:1.8; }
+  .lock-tip svg{ width:16px; height:16px; fill:none; stroke:#cf1322; stroke-width:2;
+                 flex-shrink:0; margin-top:3px; }
+  .locked{ opacity:.62; }
+  .fb.editable .fb-label:after{ content:"可修改"; margin-left:9px; padding:1px 8px;
+    border-radius:9px; font-size:11px; font-weight:400;
+    background:#f6ffed; color:#389e0d; border:1px solid #b7eb8f; }
+
+  /* 保存提示 */
+
+
+
+
+  /* 下拉 + 输入 组合控件 */
+  .combo{ display:inline-flex; align-items:center; }
+  .combo .sel{ width:132px; border-radius:3px 0 0 3px; border-right:none; background-color:#fafafa; }
+  .combo .fld{ width:210px; border-radius:0 3px 3px 0; }
+  .combo .sel:focus{ position:relative; z-index:1; }
+
+  /* ---------- 竞猜统计 ---------- */
+  .rate{ display:inline-flex; align-items:center; gap:7px; }
+  .rate .bar{ width:52px; height:5px; border-radius:3px; background:#f0f0f0; overflow:hidden; }
+  .rate .bar i{ display:block; height:100%; background:var(--blue); }
+  .rate.low .bar i{ background:#faad14; }
+  .rate.bad .bar i{ background:#ff4d4f; }
+
+  /* ---------- 竞猜明细 ---------- */
+  .win{ color:#389e0d; }
+  .lose{ color:var(--text-2); }
+  .pill-back{ background:#f9f0ff; color:#722ed1; border:1px solid #d3adf7; }
+  .odds-tag{ display:inline-flex; align-items:center; gap:5px; }
+  .odds-tag .snap{ font-size:11px; color:var(--text-2); border:1px solid var(--border-light);
+                   border-radius:2px; padding:0 4px; }
+  .od-detail{ display:grid; grid-template-columns:repeat(2,1fr); gap:0 30px; }
+  .od-detail .dt{ margin-bottom:15px; }
+  .od-detail .dt-k{ width:112px; }
+
+  /* ---------- 活动详情 ---------- */
+  .dt-cols{ display:flex; align-items:flex-start; }
+  .dt-l{ flex:1 1 50%; min-width:0; padding-right:34px; }
+  .dt-r{ flex:1 1 50%; min-width:0; padding-left:34px; border-left:1px solid var(--border-light); }
+  .dt{ display:flex; margin-bottom:20px; align-items:flex-start; }
+  .dt-k{ width:132px; flex-shrink:0; text-align:right; padding-right:18px; color:var(--text-2); line-height:1.7; }
+  .dt-v{ flex:1; min-width:0; line-height:1.7; word-break:break-word; }
+  .dt-v .muted{ color:var(--placeholder); }
+  .dt-v ol{ padding-left:17px; }
+  .dt-v ol li{ margin-bottom:7px; }
+  .dt-team{ width:100%; border-collapse:collapse; white-space:nowrap; }
+  .dt-team th{ text-align:left; font-weight:500; color:var(--text-2); padding:0 16px 10px 0; }
+  .dt-team td{ padding:9px 16px 9px 0; vertical-align:middle; }
+  .dt-flag{ width:46px; height:46px; border-radius:8px;
+            background:linear-gradient(180deg,#fff 0 46%,#d0021b 46% 100%);
+            border:1px solid var(--border-light); }
+
+
+  /* ---------- 赛事管理 ---------- */
+  .mt-bar{ display:flex; align-items:center; gap:10px; margin-bottom:15px; flex-wrap:wrap; }
+  .mt-bar .spacer{ flex:1; }
+  .mt-stat{ display:flex; gap:22px; padding:12px 16px; background:#fafafa;
+            border-radius:3px; margin-bottom:15px; }
+  .mt-stat div{ display:flex; flex-direction:column; gap:4px; }
+  .mt-stat span{ color:var(--text-2); font-size:13px; }
+  .mt-stat b{ font-size:17px; font-variant-numeric:tabular-nums; }
+
+  .vs{ display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  .vs .flag{ width:22px; height:22px; border-radius:50%; flex-shrink:0;
+             background:linear-gradient(180deg,#fff 0 46%,#d0021b 46% 100%);
+             border:1px solid var(--border-light); }
+  .vs .sep{ color:var(--placeholder); font-size:12px; }
+
+  .odds{ display:flex; gap:6px; }
+  .odds span{ padding:2px 8px; border-radius:3px; background:#f5f5f5;
+              font-variant-numeric:tabular-nums; font-size:13px; }
+  .odds span i{ font-style:normal; color:var(--text-2); margin-right:4px; }
+  .odds span.hit{ background:#f6ffed; color:#389e0d; border:1px solid #b7eb8f; }
+
+  .pill-lock{ background:#f0f5ff; color:#2f54eb; border:1px solid #adc6ff; }
+  .pill-check{ background:#fff7e6; color:#d46b08; border:1px solid #ffd591; }
+
+  /* 赛果选择 */
+  .res-pick{ display:flex; gap:11px; }
+  .res-pick label{ flex:1; border:1px solid var(--border); border-radius:4px;
+                   padding:13px; text-align:center; cursor:pointer; transition:all .15s; }
+  .res-pick label:hover{ border-color:var(--blue); }
+  .res-pick input{ display:none; }
+  .res-pick input:checked + span{ color:var(--blue); font-weight:500; }
+  .res-pick label:has(input:checked){ border-color:var(--blue); background:#e6f7ff; }
+  .res-pick .od{ display:block; font-size:13px; color:var(--text-2); margin-top:5px; font-variant-numeric:tabular-nums; }
+
+  .kv2{ background:#fafafa; border-radius:3px; padding:14px 16px; margin-bottom:18px; }
+  .kv2 div{ display:flex; padding:5px 0; font-size:13px; }
+  .kv2 span:first-child{ color:var(--text-2); width:106px; flex-shrink:0; }
+  .kv2 b{ font-weight:500; font-variant-numeric:tabular-nums; }
+
+
+
+  /* 赛制切换 Tab */
+  .rd-mode{ display:flex; gap:0; border-bottom:1px solid var(--border-light); margin-bottom:22px; }
+  .rd-mode div{ padding:11px 26px; cursor:pointer; color:var(--text-2);
+                border-bottom:2px solid transparent; font-size:15px; }
+  .rd-mode div:hover{ color:var(--blue); }
+  .rd-mode div.on{ color:var(--blue); font-weight:500; border-bottom-color:var(--blue); }
+  .rd-mode div.disabled{ color:var(--placeholder); cursor:not-allowed; }
+  .rd-mode div.disabled:hover{ color:var(--placeholder); }
+  .rd-oddtip{ display:flex; align-items:center; gap:8px; padding:10px 14px; margin-bottom:20px;
+              background:#fdf6ec; border-radius:3px; color:#874d00; font-size:13px; }
+  .rd-oddtip svg{ width:15px; height:15px; fill:none; stroke:#fa8c16; stroke-width:2; flex-shrink:0; }
+
+
+  .rd-langtip{ margin:-8px 0 20px; font-size:13px; color:var(--text-2); }
+  .rd-langtip b{ color:var(--text); font-weight:500; }
+
+  /* ---------- 录入赛况 ---------- */
+  .rd-tabs{ display:flex; align-items:center; gap:0; flex-wrap:wrap; margin-bottom:20px; }
+  .rd-tab{ display:flex; align-items:center; gap:6px; height:40px; padding:0 14px;
+           border:1px solid var(--border); border-left:none; background:#fff; cursor:pointer; }
+  .rd-tab:first-child{ border-left:1px solid var(--border); border-radius:3px 0 0 3px; }
+  .rd-tab input{ border:none; outline:none; background:transparent; width:76px;
+                 font-family:inherit; font-size:14px; color:inherit; cursor:pointer; }
+  .rd-tab.on{ color:var(--blue); border-color:var(--blue); position:relative; z-index:1; }
+  .rd-tab.on input{ color:var(--blue); cursor:text; }
+  .rd-tab .x{ color:#bfbfbf; font-size:14px; }
+  .rd-tab .x:hover{ color:var(--text); }
+  .rd-add{ height:40px; padding:0 18px; margin-left:14px; border:1px solid var(--blue);
+           border-radius:3px; background:var(--blue); color:#fff; font-size:14px;
+           font-family:inherit; cursor:pointer; }
+  .rd-add:hover{ background:var(--blue-hover); }
+
+  .rd-line{ display:flex; align-items:center; gap:12px; margin-bottom:15px; flex-wrap:wrap; }
+  .rd-line .lb{ color:var(--text); flex-shrink:0; }
+  .rd-suffix{ display:flex; align-items:center; }
+  .rd-suffix input{ border-radius:3px 0 0 3px; border-right:none; }
+  .rd-suffix .sfx{ height:36px; line-height:34px; padding:0 16px; border:1px solid var(--border);
+                   border-radius:0 3px 3px 0; background:#f5f5f5; color:var(--text-2); }
+
+  .rd-toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .rd-toolbar .spacer{ flex:1; }
+  .rd-toolbar .lk{ color:var(--blue); cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+  .rd-toolbar .lk:hover{ text-decoration:underline; }
+
+  .rd-banner{ position:relative; display:flex; gap:14px; padding:16px 20px; margin:20px 0 0;
+              background:#fdf6ec; border-radius:3px; color:#874d00; line-height:2; }
+  .rd-banner.hide{ display:none; }
+  .rd-banner .ic{ flex-shrink:0; width:22px; height:22px; margin-top:3px; }
+  .rd-banner ul{ flex:1; list-style:none; }
+  .rd-banner li:before{ content:"·"; margin-right:5px; }
+  .rd-handle{ position:absolute; top:-9px; left:50%; transform:translateX(-50%);
+              width:56px; height:16px; border-radius:8px 8px 0 0; background:#a6d3ff;
+              color:#fff; font-size:11px; line-height:16px; text-align:center; cursor:pointer; }
+  .rd-handle:hover{ background:#7cbcff; }
+
+  .rd-tablewrap{ margin-top:0; overflow-x:auto; }
+  .rd-table{ width:100%; border-collapse:collapse; white-space:nowrap; }
+  .rd-table th{ background:#fafafa; padding:14px 16px; text-align:center; font-weight:600;
+                border-bottom:1px solid var(--border-light); border-right:1px solid var(--border-light); }
+  .rd-table th:last-child{ border-right:none; }
+  .rd-table td{ padding:15px 16px; text-align:center; border-bottom:1px solid #f0f0f0;
+                border-right:1px solid #f5f5f5; font-variant-numeric:tabular-nums; }
+  .rd-table td:last-child{ border-right:none; }
+  .rd-table tr.on{ background:#e6f4ff; }
+  .rd-table tr:hover{ background:#e6f7ff; }
+  .rd-empty{ padding:56px 0; text-align:center; color:var(--placeholder); }
+  .st-warn{ color:#fa8c16; }
+  .st-ok{ color:#389e0d; }
+  .dash-c{ color:var(--text-2); }
+
+
+  /* ---------- 更多下拉 ---------- */
+  .more-trigger{ display:inline-flex; align-items:center; gap:3px; }
+  .more-trigger .arw{ font-size:10px; }
+  .more-menu{
+    position:fixed; display:none; z-index:1300; min-width:132px;
+    background:#fff; border:1px solid var(--border-light); border-radius:3px;
+    box-shadow:0 3px 12px rgba(0,0,0,.13); padding:4px 0;
+  }
+  .more-menu.show{ display:block; }
+  .more-menu button{
+    display:block; width:100%; text-align:left; padding:9px 16px;
+    border:none; background:none; font-size:14px; font-family:inherit;
+    color:var(--text); cursor:pointer; white-space:nowrap;
+  }
+  .more-menu button:hover{ background:#f5f5f5; color:var(--blue); }
+  .more-menu button.danger{ color:#cf1322; }
+  .more-menu button.danger:hover{ background:#fff1f0; color:#cf1322; }
+  .more-menu button:disabled{ color:var(--placeholder); cursor:not-allowed; background:none; }
+  .more-menu .divider{ height:1px; background:var(--border-light); margin:4px 0; }
+
+  /* ---------- 状态双标 ---------- */
+  .status-cell{ display:flex; flex-direction:column; gap:5px; align-items:flex-start; }
+
+  /* ---------- 确认弹窗 ---------- */
+  .confirm-body{ display:flex; gap:14px; align-items:flex-start; }
+  .confirm-icon{ width:22px; height:22px; flex-shrink:0; margin-top:1px; }
+  .confirm-icon svg{ width:22px; height:22px; fill:none; stroke-width:1.9; }
+  .confirm-text{ line-height:1.7; }
+  .confirm-text .lead{ font-size:15px; font-weight:500; margin-bottom:8px; }
+  .kv{ margin-top:12px; background:#fafafa; border-radius:3px; padding:11px 14px; }
+  .kv div{ display:flex; gap:10px; padding:3px 0; font-size:13px; }
+  .kv span:first-child{ color:var(--text-2); width:78px; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><circle cx="7" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><circle cx="12" cy="17" r="3"/><path d="M9.4 9.6l-1 5M14.6 9.6l1 5" stroke="#fff" stroke-width="1.6"/></svg>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" data-page="config">竞猜配置列表</div>
+    <div class="nav-item" data-page="detail">竞猜明细</div>
+    <div class="nav-item" data-page="member">竞猜会员</div>
+    <div class="nav-item" data-page="stat">竞猜统计</div>
+  </nav>
+  <div class="topbar-right">
+    <span class="master-hint" id="masterHint">关闭后前端入口隐藏，已投注单不受影响</span>
+    <span class="master-label">竞猜总开关</span>
+    <label class="switch gsw"><input type="checkbox" id="masterSwitch" checked><span class="slider"></span></label>
+  </div>
+</div>
+
+<!-- ================= 竞猜配置列表 ================= -->
+<section id="page-config">
+  <div class="page-head">
+    <button class="btn btn-primary" onclick="openEditor('create')">添加活动</button>
+  </div>
+
+  <div class="filters">
+    <select class="sel caliber">
+      <option>创建时间</option><option>开始时间</option><option>截止时间</option><option>结算时间</option>
+    </select>
+    <input class="fld f-date left" placeholder="开始日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    <span class="tilde">～</span>
+    <input class="fld f-date" placeholder="结束日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    <input class="fld f-kw" id="cfgKw" placeholder="活动名称 / 配置ID">
+    <select class="sel w130"><option>全部活动状态</option><option>草稿</option><option>未开始</option><option>进行中</option><option>已截止</option><option>已结算</option><option>已关闭</option></select>
+    <select class="sel w130"><option>全部启用状态</option><option>已启用</option><option>未启用</option></select>
+    <button class="btn btn-primary" onclick="cfgSearch()">搜索</button>
+    <button class="btn" onclick="cfgReset()">重置</button>
+  </div>
+
+  <div class="freshness">
+    <svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4.5-3.2 7.6-8 8.6C7.2 20.6 4 17.5 4 13V7z"/><path d="M9 12l2 2 4-4"/></svg>
+    <span>本页是竞猜规则的<b>唯一写入口</b>。赛况录入、结果确认、触发结算、派奖均在此发起，所有操作留痕并可在稽核日志中追溯。</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-tbl="cfg" data-key="id" data-type="str"><span class="th-inner">配置ID<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>活动名称</th>
+          <th>积分获取方式</th>
+          <th>参与条件</th>
+          <th>参与层级</th>
+          <th>参与VIP等级</th>
+          <th class="sortable" data-tbl="cfg" data-key="matches" data-type="num"><span class="th-inner">赛事数量<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>活动时间</th>
+          <th>展示时间</th>
+          <th class="sortable" data-tbl="cfg" data-key="pool" data-type="num"><span class="th-inner">瓜分总奖金<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>活动状态</th>
+          <th>创建时间</th>
+          <th>更新时间</th>
+          <th>更新人</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="cfgBody"></tbody>
+    </table>
+
+    <div class="pager">
+      <span class="pager-total">共 42 条</span>
+      <button class="pg">‹</button><button class="pg active">1</button>
+      <button class="pg">2</button><button class="pg">3</button><button class="pg">›</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 竞猜会员 ================= -->
+<section id="page-member" style="display:none">
+  <div class="filters">
+    <select class="sel caliber" id="caliber"><option>首次参与</option><option>最近参与</option></select>
+    <input class="fld f-date left" placeholder="开始日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    <span class="tilde">～</span>
+    <input class="fld f-date" placeholder="结束日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    <input class="fld f-account" id="mbAcc" placeholder="会员账号">
+    <select class="sel w150" id="mbVip"><option>全部VIP等级</option><option>VIP 1-10</option><option>VIP 11-30</option><option>VIP 31-50</option><option>SVIP</option></select>
+    <select class="sel w150" id="mbTier"><option>全部层级</option><option>层级1</option><option>层级2</option><option>层级3</option><option>层级4</option></select>
+    <select class="sel w150" id="mbTag"><option>全部标签</option><option>标签1</option><option>高价值</option><option>风险关注</option></select>
+    <select class="sel w180" id="mbAct"><option>全部活动</option><option>国际冠军杯冠军竞猜</option><option>夏季联赛全场比分</option><option>东南亚邀请赛首球时间</option></select>
+    <button class="btn btn-primary" onclick="search()">搜索</button>
+    <button class="btn" onclick="reset()">重置</button>
+    <div class="spacer"></div>
+    <button class="btn btn-primary">导出</button>
+  </div>
+
+  <div class="freshness">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+    <span>统计数据每 <b>4 小时</b>更新一次，覆盖所有活动。数据来源为区间统计，非实时值。当前数据截止 <b>2024-08-19 12:00:00</b>。</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-tbl="mem" data-key="account" data-type="str"><span class="th-inner">会员账号<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>VIP</th><th>层级</th><th>标签</th>
+          <th class="sortable" data-tbl="mem" data-key="bets" data-type="num"><span class="th-inner">投注笔数<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th class="sortable" data-tbl="mem" data-key="stake" data-type="num"><span class="th-inner">投注积分<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th class="sortable" data-tbl="mem" data-key="win" data-type="num"><span class="th-inner">中奖积分<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th class="sortable" data-tbl="mem" data-key="prize" data-type="num"><span class="th-inner">瓜分奖金<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th class="sortable" data-tbl="mem" data-key="earn" data-type="num"><span class="th-inner">获得积分<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th class="sortable" data-tbl="mem" data-key="net" data-type="num"><span class="th-inner">积分净盈亏<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>最近参与活动</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+      <tfoot>
+        <tr><td colspan="4" class="label">小计（当前页）</td>
+          <td id="s-bets"></td><td id="s-stake"></td><td id="s-win"></td><td id="s-prize"></td>
+          <td id="s-earn"></td><td id="s-net"></td><td></td></tr>
+        <tr><td colspan="4" class="label">总计（全量）</td>
+          <td>18,642</td><td>26,481,900</td><td>28,206,340</td><td>2,184,600.00</td>
+          <td>7,043,280</td><td>+1,724,440</td><td></td></tr>
+      </tfoot>
+    </table>
+    <div class="pager">
+      <span class="pager-total" id="mbTotal">共 1,284 条</span>
+      <button class="pg">‹</button><button class="pg active">1</button>
+      <button class="pg">2</button><button class="pg">3</button><button class="pg">…</button>
+      <button class="pg">86</button><button class="pg">›</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 竞猜明细 ================= -->
+<section id="page-detail" style="display:none">
+  <div class="filters">
+    <select class="sel caliber" id="odCaliber"><option>下注时间</option><option>结算时间</option><option>派奖时间</option></select>
+    <input class="fld f-date left" placeholder="开始日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    <span class="tilde">～</span>
+    <input class="fld f-date" placeholder="结束日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    <span class="combo">
+      <select class="sel" id="odKeyType" onchange="onOdKeyType()">
+        <option value="acc">会员账号</option>
+        <option value="no">竞猜订单号</option>
+        <option value="cfg">配置ID</option>
+      </select>
+      <input class="fld" id="odKeyword" placeholder="请输入会员账号">
+    </span>
+    <span class="combo">
+      <select class="sel" style="width:180px" id="odAct" onchange="onOdAct()">
+        <option value="">全部活动</option>
+      </select>
+      <select class="sel" style="width:200px;border-radius:0 3px 3px 0" id="odMatch">
+        <option value="">全部赛事</option>
+      </select>
+    </span>
+    <select class="sel w150" id="odOpt"><option>全部投注选项</option></select>
+    <select class="sel w150"><option>全部VIP等级</option><option>VIP 1-10</option><option>VIP 11-30</option><option>VIP 31-50</option><option>SVIP</option></select>
+    <select class="sel w150"><option>全部层级</option><option>层级1</option><option>层级2</option><option>层级3</option><option>层级4</option></select>
+    <select class="sel w150"><option>全部标签</option><option>标签1</option><option>高价值</option><option>风险关注</option></select>
+    <select class="sel w130" id="odStatus"><option>全部注单状态</option><option>未结算</option><option>已结算</option><option>已退还</option></select>
+    <button class="btn btn-primary" onclick="odSearch()">搜索</button>
+    <button class="btn" onclick="odReset()">重置</button>
+    <div class="spacer"></div>
+    <button class="btn">导出记录</button>
+    <button class="btn btn-primary">导出</button>
+  </div>
+
+  <div class="freshness">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+    <span>本页为<b>注单级实时数据</b>，以赛事场次为主维度。竞猜赔率为<b>下注瞬间的快照值</b>，活动中途修改赔率不影响已成交注单。</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-tbl="od" data-key="no" data-type="str"><span class="th-inner">竞猜订单号<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>会员账号</th><th>VIP</th><th>层级</th><th>标签</th>
+          <th>活动名称</th><th>赛事ID</th><th>赛事名称</th>
+          <th>投注选项</th><th>竞猜赔率</th>
+          <th class="sortable" data-tbl="od" data-key="stake" data-type="num"><span class="th-inner">投注积分<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>预计派奖</th><th>实际派奖</th>
+          <th class="sortable" data-tbl="od" data-key="betAt" data-type="str"><span class="th-inner">下注时间<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>结算时间</th><th>状态</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="odBody"></tbody>
+      <tfoot>
+        <tr><td colspan="10" class="label">小计（当前页）</td>
+          <td id="od-s1"></td><td id="od-s2"></td><td id="od-s3"></td><td colspan="4"></td></tr>
+        <tr><td colspan="10" class="label">总计（全量）</td>
+          <td>26,481,900</td><td>31,842,760</td><td>28,206,340</td><td colspan="4"></td></tr>
+      </tfoot>
+    </table>
+
+    <div class="pager">
+      <span class="pager-total" id="odTotal">共 0 条</span>
+      <button class="pg">‹</button><button class="pg active">1</button>
+      <button class="pg">2</button><button class="pg">3</button><button class="pg">…</button>
+      <button class="pg">248</button><button class="pg">›</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 注单详情 ============ -->
+<div class="mask" id="mask-od" onclick="if(event.target===this)closeMask('mask-od')">
+  <div class="modal md">
+    <div class="modal-hd">
+      <div><div class="modal-title">注单详情</div><div class="modal-sub" id="od-sub"></div></div>
+      <button class="close" onclick="closeMask('mask-od')">×</button>
+    </div>
+    <div class="modal-bd"><div class="od-detail" id="odDetail"></div></div>
+    <div class="modal-ft"><button class="btn" onclick="closeMask('mask-od')">关闭</button></div>
+  </div>
+</div>
+
+<!-- ================= 竞猜统计 ================= -->
+<section id="page-stat" style="display:none">
+  <div class="filters">
+    <input class="fld f-date" style="border-radius:3px 0 0 3px;border-right:none" placeholder="统计开始日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    <span class="tilde">～</span>
+    <input class="fld f-date" placeholder="统计结束日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    <input class="fld" style="width:180px" id="stName" placeholder="活动名称">
+    <input class="fld" style="width:150px" id="stCfg" placeholder="配置ID">
+    <span class="rd-suffix">
+      <span class="sfx" style="border-radius:3px 0 0 3px;border-right:none">获取人数 ≥</span>
+      <input class="fld" style="width:130px;border-radius:0 3px 3px 0" id="stMin" placeholder="阈值">
+    </span>
+    <button class="btn btn-primary" onclick="stSearch()">搜索</button>
+    <button class="btn" onclick="stReset()">重置</button>
+    <div class="spacer"></div>
+    <button class="btn">导出记录</button>
+    <button class="btn btn-primary">导出</button>
+  </div>
+
+  <div class="freshness">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+    <span>统计数据<b>每日 0 点更新一次</b>，覆盖所有活动，来源为区间聚合数据。当前数据截止 <b>2024-08-19 00:00:00</b>。</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-tbl="st" data-key="date" data-type="str"><span class="th-inner">统计时间<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>配置ID</th>
+          <th>活动名称</th>
+          <th class="sortable" data-tbl="st" data-key="got" data-type="num"><span class="th-inner">获取积分人数<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th class="sortable" data-tbl="st" data-key="join" data-type="num"><span class="th-inner">参与人数<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>参与率</th>
+          <th class="sortable" data-tbl="st" data-key="bets" data-type="num"><span class="th-inner">投注总数<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th class="sortable" data-tbl="st" data-key="stake" data-type="num"><span class="th-inner">投注积分<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>中奖积分</th>
+          <th class="sortable" data-tbl="st" data-key="share" data-type="num"><span class="th-inner">瓜分人数<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th class="sortable" data-tbl="st" data-key="amount" data-type="num"><span class="th-inner">瓜分金额<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
+          <th>人均瓜分</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="stBody"></tbody>
+      <tfoot>
+        <tr><td colspan="3" class="label">小计（当前页）</td>
+          <td id="st-got"></td><td id="st-join"></td><td></td>
+          <td id="st-bets"></td><td id="st-stake"></td><td id="st-win"></td>
+          <td id="st-share"></td><td id="st-amt"></td><td colspan="2"></td></tr>
+        <tr><td colspan="3" class="label">总计（全量）</td>
+          <td>36,482</td><td>18,246</td><td></td>
+          <td>142,860</td><td>26,481,900</td><td>28,206,340</td>
+          <td>14,208</td><td>2,184,600.00</td><td colspan="2"></td></tr>
+      </tfoot>
+    </table>
+
+    <div class="pager">
+      <span class="pager-total" id="stTotal">共 0 条</span>
+      <button class="pg">‹</button><button class="pg active">1</button>
+      <button class="pg">2</button><button class="pg">3</button><button class="pg">›</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 活动统计详情 ============ -->
+<div class="mask" id="mask-st" onclick="if(event.target===this)closeMask('mask-st')">
+  <div class="modal md">
+    <div class="modal-hd">
+      <div><div class="modal-title">活动统计详情</div><div class="modal-sub" id="st-sub"></div></div>
+      <button class="close" onclick="closeMask('mask-st')">×</button>
+    </div>
+    <div class="modal-bd">
+      <div class="mt-stat" id="stCards"></div>
+      <table class="inner-table" style="margin-top:18px">
+        <thead><tr><th>统计时间</th><th>获取积分人数</th><th>参与人数</th><th>投注总数</th>
+          <th>投注积分</th><th>瓜分人数</th><th>瓜分金额</th></tr></thead>
+        <tbody id="stTrend"></tbody>
+      </table>
+      <div class="note">瓜分人数为满足<strong>参与资格</strong>且计入分母的会员数；获取积分人数与参与人数的差额，即领取积分但未达成参与条件的会员。</div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeMask('mask-st')">关闭</button></div>
+  </div>
+</div>
+
+
+
+
+<!-- 更多下拉 -->
+<div class="more-menu" id="moreMenu"></div>
+
+<!-- ============ 二次确认 ============ -->
+<div class="mask" id="mask-confirm" onclick="if(event.target===this)closeMask('mask-confirm')">
+  <div class="modal sm" style="width:480px">
+    <div class="modal-hd">
+      <div class="modal-title" id="cf-title">确认操作</div>
+      <button class="close" onclick="closeMask('mask-confirm')">×</button>
+    </div>
+    <div class="modal-bd">
+      <div class="confirm-body">
+        <div class="confirm-icon" id="cf-icon"></div>
+        <div class="confirm-text">
+          <div class="lead" id="cf-lead"></div>
+          <div id="cf-desc"></div>
+          <div class="kv" id="cf-kv"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeMask('mask-confirm')">取消</button>
+      <button class="btn btn-primary" id="cf-ok">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 新增/编辑活动 ============ -->
+<div class="mask" id="mask-editor" onclick="if(event.target===this)closeMask('mask-editor')">
+  <div class="modal xl">
+    <div class="modal-hd">
+      <div><div class="modal-title" id="ed-title">新增活动</div>
+        <div class="modal-sub" id="ed-sub"></div></div>
+      <button class="close" onclick="closeMask('mask-editor')">×</button>
+    </div>
+
+    <div class="modal-bd">
+      <div class="lock-tip" id="edLockTip" style="display:none">
+        <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        <span id="edLockTxt"></span>
+      </div>
+
+      <div class="editor-cols">
+
+        <!-- ================= 左栏 ================= -->
+        <div class="col-l">
+
+          <div class="sec"><i></i><b>基础配置</b></div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>活动名称</div>
+            <div class="lang-bar"><span class="on" onclick="pickLang(this)">Tiếng Việt</span><span class="" onclick="pickLang(this)">ภาษาไทย</span><span class="" onclick="pickLang(this)">Português</span><span class="" onclick="pickLang(this)">English</span><span class="" onclick="pickLang(this)">한국인</span></div>
+            <input class="fld w-full" placeholder="最多输入64个字符" maxlength="64">
+          </div>
+
+          <div class="fb">
+            <div class="fb-label">活动排序</div>
+            <input class="fld w-full" placeholder="请输入1~999999的整数，数值越大越靠前，可为空">
+          </div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>活动时间</div>
+            <div class="drow">
+              <div class="range"><input type="datetime-local" id="actStart" onchange="syncShow()"><span class="dash">-</span><input type="datetime-local" id="actEnd" onchange="syncShow()"></div>
+              <button class="btn-long off" onclick="toggleLong(this,'act')">长期</button>
+            </div>
+          </div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>展示时间</div>
+            <div class="drow">
+              <div class="range" id="showRange"><input type="datetime-local" id="showStart"><span class="dash">-</span><input type="datetime-local" id="showEnd"></div>
+              <button class="btn-long off" onclick="toggleLong(this,'show')">长期</button>
+            </div>
+            <label class="cb on" style="margin-top:11px"><input type="checkbox" id="sameTime" checked onchange="syncShow()">展示时间与活动时间一致</label>
+              <div class="err" id="edTimeWarn" style="display:none"></div>
+          </div>
+
+          <div class="sec"><i></i><b>规则配置</b></div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>队伍配置<span class="team-count even" id="teamCount">共 2 支 · 双数</span></div>
+            <div class="team-head"><span>编号</span><span>队伍Icon</span><span>队伍名称</span></div>
+            <div id="teamRows"></div>
+            <div class="tip-line">只能上传png,jpeg,jpg格式图片，且不超过1mb，图片尺寸100px*100px</div>
+            <div class="fb-warn" id="teamWarn">队伍数量为<strong>单数</strong>时，无法两两配对成局，该活动<strong>仅可配置联赛，不可配置杯赛</strong>。如需配置杯赛，请将队伍数量调整为双数。</div>
+          </div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>参与条件</div>
+            <div class="rds">
+              <label class="rd on"><input type="radio" name="jc" value="none" checked onchange="onJoinCond(this)">无条件</label>
+              <label class="rd"><input type="radio" name="jc" value="dep" onchange="onJoinCond(this)">累计充值</label>
+              <label class="rd"><input type="radio" name="jc" value="wag" onchange="onJoinCond(this)">累计打码</label>
+            </div>
+          </div>
+
+          <div class="fb" id="jcDepRow" style="display:none">
+            <div class="fb-label"><span class="req">*</span>累计充值</div>
+            <input class="fld w-full" placeholder="请输入条件值">
+          </div>
+
+
+          <div class="fb" id="jcPayRow" style="display:none">
+            <div class="fb-label"><span class="req">*</span>充值方式</div>
+            <label class="chan chan-all"><input type="checkbox" onchange="toggleAll(this,'jcpay');chanCount()">全选(不限)</label>
+            <div class="chan-grid">
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="Zalo Pay">Zalo Pay</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="Viettel Pay">Viettel Pay</span></label>
+              <label class="chan on"><input type="checkbox" class="jcpay" checked onchange="chanCount()"><span class="txt" data-full="Nap Nhanh">Nap Nhanh</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="MOMO(Bank)Transfer">MOMO(Bank)Transfer</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="USDT-TRC20">USDT-TRC20</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="Wallet-OKPay">Wallet-OKPay</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="Wallet-ZaloPay">Wallet-ZaloPay</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="MOMO(Bank)QuickPay">MOMO(Bank)QuickPay</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="MOMO(Bank)ScanCode">MOMO(Bank)ScanCode</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="MOMO(Bank)DirectPay">MOMO(Bank)DirectPay</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="MOMO(Bank)AgentPay">MOMO(Bank)AgentPay</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="MOMO(Bank)WalletPay">MOMO(Bank)WalletPay</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="Thẻ Cào">Thẻ Cào</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="USDT-ERC20">USDT-ERC20</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="客服代充">客服代充</span></label>
+              <label class="chan"><input type="checkbox" class="jcpay"  onchange="chanCount()"><span class="txt" data-full="提现转充值">提现转充值</span></label>
+              </div>
+            <div class="venue-sum">已选 <b id="chanCnt">1</b> 个渠道</div>
+          </div>
+
+          <div class="fb" id="jcWagRow" style="display:none">
+            <div class="fb-label"><span class="req">*</span>累计打码</div>
+            <input class="fld w-full" placeholder="请输入条件值">
+          </div>
+
+          <div class="fb" id="jcPlatRow" style="display:none">
+            <div class="fb-label">选取平台</div>
+
+            <div class="rds">
+              <label class="rd on"><input type="radio" name="jcPlat" value="all" checked onchange="onVenueMode('jc',this)">全部平台</label>
+              <label class="rd"><input type="radio" name="jcPlat" value="in" onchange="onVenueMode('jc',this)">勾选指定场馆</label>
+              <label class="rd"><input type="radio" name="jcPlat" value="ex" onchange="onVenueMode('jc',this)">排除指定场馆</label>
+            </div>
+            <div class="venue" id="jcVenue" style="display:none">
+              <div class="venue-search">
+                <select>
+                  <option>游戏名称</option><option>厂商名称</option><option>场馆名称</option>
+                </select>
+                <input placeholder="游戏名称关键字">
+                <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg></button>
+              </div>
+              <div class="venue-panel">
+                <div class="venue-cols">
+                  <div class="vcol cat" id="jcCat"></div>
+                  <div class="vcol" id="jcFac"></div>
+                  <div class="vcol" id="jcGame"></div>
+                </div>
+                <div class="venue-foot">
+                  <span class="cnt">共 9999 条</span>
+                  <span class="pgn">‹</span>
+                  <span class="pgn cur">1</span><span class="pgn">2</span><span class="pgn">3</span>
+                  <span class="pgn cur">…</span><span class="pgn">999</span>
+                  <span class="pgn">›</span>
+                </div>
+              </div>
+              <div class="venue-sum">已选 <b id="jcCnt">0</b> 个游戏</div>
+            </div>
+          </div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>获取积分</div>
+            <div class="drow">
+              <select class="sel" style="width:220px" id="earnType" onchange="onEarn()">
+                <option value="">请选择</option>
+                <option value="daily">每日赠送</option>
+                <option value="dep">按充值比例</option>
+                <option value="wag">按打码比例</option>
+              </select>
+              <span class="sub" id="earnRatioLabel" style="display:none">1 :</span>
+              <input class="fld" id="earnVal" style="flex:1" placeholder="请选择获取方式">
+            </div>
+          </div>
+
+
+          <div class="fb" id="earnPayRow" style="display:none">
+            <div class="fb-label"><span class="req">*</span>充值方式</div>
+            <div class="rds" style="margin-bottom:13px">
+              <label class="rd on"><input type="radio" name="earnPayMode" value="all" checked onchange="onEarnPayMode(this)">全部渠道</label>
+              <label class="rd"><input type="radio" name="earnPayMode" value="pick" onchange="onEarnPayMode(this)">指定渠道</label>
+            </div>
+            <div id="earnPayPick" style="display:none">
+              <div class="chan-grid">
+                <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="Zalo Pay">Zalo Pay</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="Viettel Pay">Viettel Pay</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="Nap Nhanh">Nap Nhanh</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="MOMO(Bank)Transfer">MOMO(Bank)Transfer</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="USDT-TRC20">USDT-TRC20</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="Wallet-OKPay">Wallet-OKPay</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="Wallet-ZaloPay">Wallet-ZaloPay</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="MOMO(Bank)QuickPay">MOMO(Bank)QuickPay</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="MOMO(Bank)ScanCode">MOMO(Bank)ScanCode</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="MOMO(Bank)DirectPay">MOMO(Bank)DirectPay</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="MOMO(Bank)AgentPay">MOMO(Bank)AgentPay</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="MOMO(Bank)WalletPay">MOMO(Bank)WalletPay</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="Thẻ Cào">Thẻ Cào</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="USDT-ERC20">USDT-ERC20</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="客服代充">客服代充</span></label>
+              <label class="chan"><input type="checkbox" class="earnpay" onchange="chanCount('earnpay')"><span class="txt" data-full="提现转充值">提现转充值</span></label>
+              </div>
+              <div class="venue-sum">已选 <b id="earnpayCnt">0</b> 个渠道</div>
+            </div>
+            <div class="fb-hint">仅通过所选渠道产生的充值，才按比例赠送积分。</div>
+          </div>
+
+          <div class="fb" id="earnPlatRow" style="display:none">
+            <div class="fb-label">选取平台</div>
+
+            <div class="rds">
+              <label class="rd on"><input type="radio" name="earnPlat" value="all" checked onchange="onVenueMode('earn',this)">全部平台</label>
+              <label class="rd"><input type="radio" name="earnPlat" value="in" onchange="onVenueMode('earn',this)">勾选指定场馆</label>
+              <label class="rd"><input type="radio" name="earnPlat" value="ex" onchange="onVenueMode('earn',this)">排除指定场馆</label>
+            </div>
+            <div class="venue" id="earnVenue" style="display:none">
+              <div class="venue-search">
+                <select>
+                  <option>游戏名称</option><option>厂商名称</option><option>场馆名称</option>
+                </select>
+                <input placeholder="游戏名称关键字">
+                <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg></button>
+              </div>
+              <div class="venue-panel">
+                <div class="venue-cols">
+                  <div class="vcol cat" id="earnCat"></div>
+                  <div class="vcol" id="earnFac"></div>
+                  <div class="vcol" id="earnGame"></div>
+                </div>
+                <div class="venue-foot">
+                  <span class="cnt">共 9999 条</span>
+                  <span class="pgn">‹</span>
+                  <span class="pgn cur">1</span><span class="pgn">2</span><span class="pgn">3</span>
+                  <span class="pgn cur">…</span><span class="pgn">999</span>
+                  <span class="pgn">›</span>
+                </div>
+              </div>
+              <div class="venue-sum">已选 <b id="earnCnt">0</b> 个游戏</div>
+            </div>
+          </div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>积分上限<span class="help" title="单个会员在本活动内可获得的积分总量上限">?</span></div>
+            <input class="fld w-full" placeholder="请输入积分上限，0表示不限制">
+          </div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>下注限额</div>
+            <div class="drow">
+              <input class="fld" style="flex:1" placeholder="请输入最低限额">
+              <span class="dash">-</span>
+              <input class="fld" style="flex:1" placeholder="请输入最高限额">
+            </div>
+          </div>
+
+          <div class="sec"><i></i><b>奖励配置</b></div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>实际瓜分金额</div>
+            <input class="fld w-full" placeholder="1~999,999,999">
+            <div class="fb-hint">个人奖金 = 实际瓜分金额 ÷ 全体合格会员积分总和 × 个人积分</div>
+          </div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>展示瓜分金额</div>
+            <input class="fld w-full" placeholder="1~999,999,999">
+            <div class="fb-hint">仅用于前端展示，不参与实际结算</div>
+          </div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>瓜分方式</div>
+            <div class="rds">
+              <label class="rd on"><input type="radio" name="shareMode" value="all" checked onchange="onShareMode(this)">未下注会员可参与瓜分</label>
+              <label class="rd"><input type="radio" name="shareMode" value="bet" onchange="onShareMode(this)">仅下注会员参与瓜分</label>
+            </div>
+            <div class="fb-hint" id="shareHint">凡在本活动内获得过积分的会员均计入瓜分分母，无论是否投注。</div>
+          </div>
+
+          <div class="sec"><i></i><b>稽核配置</b></div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>稽核倍数</div>
+            <div class="audit-row">
+              <input class="fld" value="1.00">
+              <span class="sub">倍</span>
+              <span class="sub">+</span>
+              <input class="fld wide" placeholder="0~999,999,999,999.99">
+            </div>
+          </div>
+
+          <div class="save-tip">
+            <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:#faad14;stroke-width:2;flex-shrink:0">
+              <circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.3v.2"/></svg>
+            请保存后选择录入赛况，更新比赛数据
+          </div>
+        </div>
+
+        <!-- ================= 右栏 ================= -->
+        <div class="col-r">
+
+          <div class="sec"><i></i><b>领取条件</b></div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>活动申领终端</div>
+            <div class="cbs c2">
+              <label class="cb on"><input type="checkbox" checked>WEB</label>
+              <label class="cb on"><input type="checkbox" checked>Android_H5</label>
+              <label class="cb on"><input type="checkbox" checked>iOS_H5</label>
+              <label class="cb on"><input type="checkbox" checked>Android_PWA</label>
+              <label class="cb on"><input type="checkbox" checked>iOS_PWA</label>
+              <label class="cb on"><input type="checkbox" checked>Android_APK</label>
+              <label class="cb on"><input type="checkbox" checked>iOS描述签</label>
+              </div>
+          </div>
+
+          <div class="fb">
+            <div class="fb-label">更多申领限制</div>
+            <div class="cbs c3" style="margin-bottom:18px">
+              <label class="cb"><input type="checkbox">完成手机短信验证</label>
+              <label class="cb"><input type="checkbox">完成邮箱验证</label>
+              <label class="cb"><input type="checkbox">完成生日设置</label>
+              <label class="cb"><input type="checkbox">完成银行卡绑定</label>
+              <label class="cb"><input type="checkbox">完成虚拟币地址绑定</label>
+              <label class="cb"><input type="checkbox">填写真实姓名</label>
+              <label class="cb"><input type="checkbox">完成提现双重认证</label>
+              <label class="cb"><input type="checkbox">同姓名只能领取1次</label>
+              <label class="cb"><input type="checkbox">同模式活动只能领取1次</label>
+              <label class="cb"><input type="checkbox">完成首存</label>
+              <label class="cb"><input type="checkbox">存款完成且未投注</label>
+              </div>
+
+            <div class="cb-num">
+              <label class="cb"><input type="checkbox">相同IP地址只能领取</label>
+              <input class="fld" placeholder="1~9,999"><span class="sub">次</span>
+            </div>
+            <div class="cb-num">
+              <label class="cb"><input type="checkbox">相同指纹只能领取</label>
+              <input class="fld" placeholder="1~9,999"><span class="sub">次</span>
+            </div>
+            <div class="cb-num">
+              <label class="cb"><input type="checkbox">最近</label>
+              <input class="fld" style="width:110px" placeholder="1~90">
+              <span class="sub">天内存款次数 ≥</span>
+              <input class="fld" placeholder="1~9,999"><span class="sub">次</span>
+            </div>
+            <div class="cb-num">
+              <label class="cb"><input type="checkbox">最近</label>
+              <input class="fld" style="width:110px" placeholder="1~90">
+              <span class="sub">天内存款金额 ≥</span>
+              <input class="fld" placeholder="1~999,999,999">
+            </div>
+          </div>
+
+          <div class="sec"><i></i><b>参与条件</b></div>
+
+          <div class="fb">
+            <div class="fb-label">条件限制参与</div>
+            <div class="rds">
+              <label class="rd on"><input type="radio" name="joinLimit" checked onchange="onJoinLimit(false)">不限制</label>
+              <label class="rd"><input type="radio" name="joinLimit" onchange="onJoinLimit(true)">按注册天数</label>
+            </div>
+            <div class="cb-num" id="regDayRow" style="display:none;margin-top:13px">
+              <span class="sub">注册满</span>
+              <input class="fld" style="width:110px" placeholder="1~999">
+              <span class="sub">天的会员可参与</span>
+            </div>
+          </div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>发放对象</div>
+
+            <div class="sub-label">指定会员层级：</div>
+            <label class="cb" style="margin-bottom:12px"><input type="checkbox" onchange="toggleAll(this,'tier')">全部层级</label>
+            <div class="grid-box"><div class="cbs c3">
+                <label class="cb"><input type="checkbox" class="tier">层级1</label>
+                <label class="cb"><input type="checkbox" class="tier">层级2</label>
+                <label class="cb"><input type="checkbox" class="tier">层级3</label>
+                <label class="cb"><input type="checkbox" class="tier">层级4</label>
+                <label class="cb"><input type="checkbox" class="tier">层级5</label>
+                <label class="cb"><input type="checkbox" class="tier">层级6</label>
+                <label class="cb"><input type="checkbox" class="tier">层级7</label>
+                <label class="cb"><input type="checkbox" class="tier">层级8</label>
+                <label class="cb"><input type="checkbox" class="tier">层级9</label>
+                <label class="cb"><input type="checkbox" class="tier">层级10</label>
+                <label class="cb"><input type="checkbox" class="tier">层级11</label>
+                <label class="cb"><input type="checkbox" class="tier">层级12</label>
+                <label class="cb"><input type="checkbox" class="tier">层级13</label>
+                <label class="cb"><input type="checkbox" class="tier">层级14</label>
+                <label class="cb"><input type="checkbox" class="tier">层级15</label>
+                <label class="cb"><input type="checkbox" class="tier">层级16</label>
+                <label class="cb"><input type="checkbox" class="tier">层级17</label>
+                <label class="cb"><input type="checkbox" class="tier">层级18</label>
+                <label class="cb"><input type="checkbox" class="tier">层级19</label>
+                <label class="cb"><input type="checkbox" class="tier">层级20</label>
+                <label class="cb"><input type="checkbox" class="tier">层级21</label>
+                <label class="cb"><input type="checkbox" class="tier">层级22</label>
+                <label class="cb"><input type="checkbox" class="tier">层级23</label>
+                <label class="cb"><input type="checkbox" class="tier">层级24</label>
+                </div></div>
+
+            <div class="sub-label">指定VIP等级：</div>
+            <label class="cb" style="margin-bottom:12px"><input type="checkbox" onchange="toggleAll(this,'vip')">全部VIP等级</label>
+            <div class="grid-box"><div class="cbs c6">
+                <label class="cb"><input type="checkbox" class="vip">VIP0</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP1</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP2</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP3</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP4</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP5</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP6</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP7</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP8</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP9</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP10</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP11</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP12</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP13</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP14</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP15</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP16</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP17</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP18</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP19</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP20</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP21</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP22</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP23</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP24</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP25</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP26</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP27</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP28</label>
+                <label class="cb"><input type="checkbox" class="vip">VIP29</label>
+                </div></div>
+
+            <div class="sub-label">指定代理账号：</div>
+            <div class="rds" style="margin-bottom:12px">
+              <label class="rd on"><input type="radio" name="agentMode" checked>输入账号</label>
+              <label class="rd"><input type="radio" name="agentMode">导入账号</label>
+            </div>
+            <div class="acc-note">注意：一个账号一条，或账号之间用 "," 号分隔。单次最多输入100,000个账号。系统会自动跳过无法识别的账号。</div>
+            <textarea class="acc-area" id="agentBox" oninput="countAcc()" placeholder="accAgent0&#10;accAgent1&#10;accAgent2"></textarea>
+            <div class="acc-foot">
+              <span class="err" id="accErr"></span>
+              <span class="sub" id="accCount">已输入 0 个账号</span>
+            </div>
+          </div>
+
+          <div class="sec"><i></i><b>规则说明</b></div>
+
+          <div class="fb">
+            <div class="fb-label"><span class="req">*</span>规则说明</div>
+            <div class="lang-bar"><span class="on" onclick="pickLang(this)">Tiếng Việt</span><span class="" onclick="pickLang(this)">ภาษาไทย</span><span class="" onclick="pickLang(this)">Português</span><span class="" onclick="pickLang(this)">English</span><span class="" onclick="pickLang(this)">한국인</span></div>
+            <textarea class="acc-area" id="ruleBox" style="height:240px" maxlength="2000"
+              oninput="ruleCount()"
+              placeholder="展示在前端活动页的完整规则。建议写明：积分获取方式、瓜分金额计算口径、瓜分方式、参与门槛、稽核倍数要求。"></textarea>
+            <div class="acc-foot">
+              <span class="err" id="ruleErr"></span>
+              <span class="sub" id="ruleCnt">0 / 2000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-ft">
+      <button class="btn" onclick="closeMask('mask-editor')">关闭</button>
+      <button class="btn btn-primary" id="edPubBtn" onclick="closeMask('mask-editor')">立即发布</button>
+      <button class="btn btn-primary" id="edSaveBtn" onclick="closeMask('mask-editor')">保存草稿</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 活动详情 ============ -->
+<div class="mask" id="mask-detail" onclick="if(event.target===this)closeMask('mask-detail')">
+  <div class="modal xl">
+    <div class="modal-hd">
+      <div><div class="modal-title">活动详情</div>
+        <div class="modal-sub" id="dt-sub"></div></div>
+      <button class="close" onclick="closeMask('mask-detail')">×</button>
+    </div>
+    <div class="modal-bd">
+      <div class="dt-cols">
+        <div class="dt-l" id="dtL"></div>
+        <div class="dt-r" id="dtR"></div>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeMask('mask-detail')">关闭</button></div>
+  </div>
+</div>
+
+<!-- ============ 录入赛况 ============ -->
+<div class="mask" id="mask-matches" onclick="if(event.target===this)closeMask('mask-matches')">
+  <div class="modal xl">
+    <div class="modal-hd">
+      <div><div class="modal-title">录入赛况</div><div class="modal-sub" id="mt-sub"></div></div>
+      <button class="close" onclick="closeMask('mask-matches')">×</button>
+    </div>
+
+    <div class="modal-bd">
+      <div class="rd-mode" id="rdMode">
+        <div class="on" onclick="rdSetMode('league')">联赛配置</div>
+        <div onclick="rdSetMode('cup')">杯赛配置</div>
+      </div>
+
+      <div class="rd-oddtip" id="rdOddTip" style="display:none">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.3v.2"/></svg>
+        <span id="rdOddTxt"></span>
+      </div>
+
+      <div class="rd-tabs" id="rdTabs"></div>
+      <div class="rd-langtip" id="rdLangTip" style="display:none">
+        当前轮次：<b id="rdCurName">—</b>
+        <span class="link" style="margin-left:12px">更多语言</span>
+      </div>
+
+      <div class="rd-toolbar">
+        <select class="sel w130" id="rdFilterDraw" onchange="renderRd()">
+          <option value="">开奖状态</option><option>已开奖</option><option>未开奖</option>
+        </select>
+        <select class="sel w130" id="rdFilterPub" onchange="renderRd()">
+          <option value="">发布状态</option><option>已发布</option><option>未发布</option>
+        </select>
+        <button class="btn btn-primary" onclick="renderRd()">搜索</button>
+        <button class="btn" onclick="rdReset()">重置</button>
+      </div>
+
+      <div class="rd-banner" id="rdBanner">
+        <div class="rd-handle" onclick="rdToggleBanner()">⌃</div>
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" stroke-width="2">
+          <circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.3v.2"/></svg>
+        <ul>
+          <li>已设置比赛并发布生效的队伍不可修改</li>
+          <li>比赛结束后才能设置赛果</li>
+        </ul>
+        <ul>
+          <li>比赛开始前用户可进行积分竞猜下注</li>
+          <li>所有修改内容，需确认发布后，客户端才生效显示</li>
+        </ul>
+      </div>
+
+      <div class="rd-tablewrap">
+        <table class="rd-table">
+          <thead><tr>
+            <th>开赛时间</th><th>队伍1</th>
+            <th>赔率<span class="help" title="队伍1获胜的赔率">?</span></th>
+            <th>队伍2</th><th>赔率</th><th>平局赔率</th><th>赛果</th>
+            <th>开奖状态</th><th>发布状态</th><th>操作</th><th>操作人</th><th>操作时间</th>
+          </tr></thead>
+          <tbody id="rdBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-ft" style="justify-content:center">
+      <button class="btn" onclick="closeMask('mask-matches')">关闭</button>
+      <button class="btn btn-primary" onclick="rdSave()">保存</button>
+      <button class="btn btn-primary" onclick="rdPublish()">发布更新</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 修正开奖结果 ============ -->
+<div class="mask" id="mask-fix" onclick="if(event.target===this)closeMask('mask-fix')">
+  <div class="modal sm" style="width:620px">
+    <div class="modal-hd">
+      <div class="modal-title">修正开奖结果</div>
+      <button class="close" onclick="closeMask('mask-fix')">×</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fx-title">开奖结果</div>
+      <table class="fx-table"><tbody id="fxInfo"></tbody></table>
+
+      <div class="fx-title mt">修正开奖结果</div>
+
+      <div class="fx-row">
+        <div class="fx-lb">选择赛果</div>
+        <div class="fx-ct"><select class="sel" id="fxWin" onchange="fxSyncOdds()"></select></div>
+      </div>
+
+      <div class="fx-row">
+        <div class="fx-lb">赔率</div>
+        <div class="fx-ct"><input class="fld" id="fxOdds" disabled></div>
+      </div>
+
+      <div class="fx-row">
+        <div class="fx-lb">是否补发积分<span class="help" title="向修正后新增的中奖注单补发应得积分">?</span></div>
+        <div class="fx-ct">
+          <label class="rd on"><input type="radio" name="fxAdd" value="1" checked>是</label>
+          <label class="rd"><input type="radio" name="fxAdd" value="0">否</label>
+        </div>
+      </div>
+
+      <div class="fx-row">
+        <div class="fx-lb">是否扣除已结算的错误积分<span class="help" title="从原先误判中奖的会员账户扣回已派发的积分">?</span></div>
+        <div class="fx-ct">
+          <label class="rd"><input type="radio" name="fxSub" value="1">是</label>
+          <label class="rd on"><input type="radio" name="fxSub" value="0" checked>否</label>
+        </div>
+      </div>
+
+      <div class="fx-warn">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.3v.2"/></svg>
+        开奖结果仅可修改一次，是否确认提交？
+      </div>
+    </div>
+    <div class="modal-ft" style="justify-content:center">
+      <button class="btn" onclick="closeMask('mask-fix')">取消</button>
+      <button class="btn btn-primary" onclick="saveFix()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 修改赛事 ============ -->
+<div class="mask" id="mask-mform" onclick="if(event.target===this)closeMask('mask-mform')">
+  <div class="modal sm" style="width:580px">
+    <div class="modal-hd"><div><div class="modal-title">修改赛事</div>
+      <div class="modal-sub" id="mf-sub"></div></div>
+      <button class="close" onclick="closeMask('mask-mform')">×</button></div>
+    <div class="modal-bd">
+      <div class="fb"><div class="fb-label"><span class="req">*</span>开赛时间</div>
+        <input class="fld w-full" type="datetime-local" id="mfStart">
+        <div class="fb-hint" id="mfRange"></div></div>
+
+      <div class="fb"><div class="fb-label"><span class="req">*</span>结束时间</div>
+        <input class="fld w-full" type="datetime-local" id="mfEnd">
+        <div class="fb-hint">须晚于开赛时间，且同样落在活动时间区间内。比赛结束后才能设置赛果。</div></div>
+
+      <div class="fb"><div class="fb-label"><span class="req">*</span>对阵队伍</div>
+        <div class="drow">
+          <select class="sel" style="flex:1" id="mfT1"></select>
+          <span class="sub">VS</span>
+          <select class="sel" style="flex:1" id="mfT2"></select>
+        </div>
+        <div class="fb-hint" id="mfLock"></div>
+      </div>
+
+      <div class="fb"><div class="fb-label"><span class="req">*</span>赔率</div>
+        <div class="drow">
+          <input class="fld" style="flex:1" id="mfO1" placeholder="队伍1赔率">
+          <input class="fld" style="flex:1" id="mfOD" placeholder="平局赔率">
+          <input class="fld" style="flex:1" id="mfO2" placeholder="队伍2赔率">
+        </div>
+        <div class="err" id="mfErr"></div>
+        <div class="fb-hint">允许区间 1.01 ~ 50.00。修改仅对新注单生效，已成交注单按下注瞬间的赔率快照结算。</div>
+      </div>
+
+      <div class="fb"><div class="fb-label">赛果</div>
+        <select class="sel w-full" id="mfWin"></select>
+        <div class="fb-hint" id="mfWinHint"></div>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeMask('mask-mform')">取消</button>
+      <button class="btn btn-primary" onclick="saveRdRow()">确认</button></div>
+  </div>
+</div>
+
+<!-- ============ 关闭活动 ============ -->
+<div class="mask" id="mask-close" onclick="if(event.target===this)closeMask('mask-close')">
+  <div class="modal sm">
+    <div class="modal-hd"><div><div class="modal-title">关闭活动</div>
+      <div class="modal-sub" id="cl-sub"></div></div>
+      <button class="close" onclick="closeMask('mask-close')">×</button></div>
+    <div class="modal-bd">
+      <table class="inner-table" style="margin-bottom:18px">
+        <thead><tr><th>赛事状态</th><th>场次</th><th>涉及投注积分</th><th>处理方式</th></tr></thead>
+        <tbody>
+          <tr><td>未开始</td><td>3</td><td>0</td><td><select class="sel w-160"><option>作废赛事</option></select></td></tr>
+          <tr><td>进行中</td><td>2</td><td>184,600</td><td><select class="sel w-160"><option>退还投注积分</option><option>照常等待结算</option><option>作废并退还</option></select></td></tr>
+          <tr><td>已结束</td><td>7</td><td>892,400</td><td><select class="sel w-160"><option>照常结算派奖</option><option>作废并退还</option></select></td></tr>
+        </tbody>
+      </table>
+      <div class="form-row"><div class="form-label">瓜分奖金处理</div>
+        <div class="form-ctl"><select class="sel w-220"><option>不发放，奖池收回</option><option>按已进行天数比例缩减</option></select></div></div>
+      <div class="form-row"><div class="form-label"><span class="req">*</span>关闭原因</div>
+        <div class="form-ctl"><textarea class="fld w-full" style="height:70px" placeholder="将记入稽核日志"></textarea></div></div>
+      <div class="note warn">关闭后活动不可重新开启，前端入口立即隐藏。已生成的派奖单不受影响。</div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeMask('mask-close')">取消</button>
+      <button class="btn btn-primary" onclick="closeMask('mask-close')">确认关闭</button></div>
+  </div>
+</div>
+
+<!-- ============ 派奖 ============ -->
+<div class="mask" id="mask-award" onclick="if(event.target===this)closeMask('mask-award')">
+  <div class="modal sm">
+    <div class="modal-hd"><div><div class="modal-title">指定会员彩金赠送</div>
+      <div class="modal-sub" id="aw-sub"></div></div>
+      <button class="close" onclick="closeMask('mask-award')">×</button></div>
+    <div class="modal-bd">
+      <div class="form-row"><div class="form-label"><span class="req">*</span>会员账号</div>
+        <div class="form-ctl"><textarea class="fld w-full" style="height:80px" placeholder="多个账号换行分隔"></textarea></div></div>
+      <div class="form-row"><div class="form-label"><span class="req">*</span>赠送金额</div>
+        <div class="form-ctl"><div class="inline"><input class="fld w-160" placeholder="0.00"><span class="sub">元 / 人</span></div></div></div>
+      <div class="form-row"><div class="form-label">入账账户</div>
+        <div class="form-ctl"><select class="sel w-220"><option>平台可消费账户</option><option>彩金账户</option></select></div></div>
+      <div class="form-row"><div class="form-label">流水要求</div>
+        <div class="form-ctl"><div class="inline"><input class="fld w-110" value="1"><span class="sub">倍</span></div></div></div>
+      <div class="form-row"><div class="form-label"><span class="req">*</span>赠送原因</div>
+        <div class="form-ctl"><textarea class="fld w-full" style="height:70px" placeholder="将记入稽核日志"></textarea></div></div>
+      <div class="note warn">本操作直接出账真实资金，提交后需另一账号复核通过方可执行。重复提交按幂等键去重。</div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeMask('mask-award')">取消</button>
+      <button class="btn btn-primary" onclick="closeMask('mask-award')">提交复核</button></div>
+  </div>
+</div>
+
+<!-- ============ 投注注单列表 ============ -->
+<div class="mask" id="mask-orders" onclick="if(event.target===this)closeMask('mask-orders')">
+  <div class="modal lg">
+    <div class="modal-hd"><div><div class="modal-title">投注注单列表</div>
+      <div class="modal-sub" id="o-sub"></div></div>
+      <button class="close" onclick="closeMask('mask-orders')">×</button></div>
+    <div class="modal-bd">
+      <table class="inner-table">
+        <thead><tr>
+          <th>竞猜订单号</th><th>活动名称</th><th>赛事名称</th><th>投注选项</th>
+          <th>竞猜赔率</th><th>投注积分</th><th>预计派奖</th><th>实际派奖</th>
+          <th>下注时间</th><th>结算时间</th><th>状态</th></tr></thead>
+        <tbody id="o-body"></tbody>
+      </table>
+      <div class="note">竞猜赔率为<strong>下注瞬间的快照值</strong>，活动中途修改赔率只对新注单生效，已成交注单按快照结算。</div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeMask('mask-orders')">关闭</button></div>
+  </div>
+</div>
+
+<!-- ============ 积分来源 ============ -->
+<div class="mask" id="mask-source" onclick="if(event.target===this)closeMask('mask-source')">
+  <div class="modal sm">
+    <div class="modal-hd"><div><div class="modal-title">获得积分 · 积分来源</div>
+      <div class="modal-sub" id="m-sub"></div></div>
+      <button class="close" onclick="closeMask('mask-source')">×</button></div>
+    <div class="modal-bd">
+      <table class="inner-table">
+        <thead><tr><th>积分来源</th><th>积分数</th><th>占比</th><th>计入瓜分份额</th></tr></thead>
+        <tbody id="m-body"></tbody>
+      </table>
+      <div class="note">瓜分份额仅按<strong>系统派送 / 充值比例 / 打码比例</strong>三类渠道获得的积分计算。中奖积分可继续用于投注，但不计入份额。</div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeMask('mask-source')">关闭</button></div>
+  </div>
+</div>
+
+<script>
+/* ===================== 全局状态 ===================== */
+let edLocked = false;   // 编辑弹窗：已发布活动的时间字段锁定态
+
+/* ===================== 数据 ===================== */
+const cfgRows = [
+  {id:"JC2024081907", name:"中超联赛胜平负竞猜", src:"每日赠送", cond:"无条件", condVal:0, tier:"层级1", vip:"VIP2",
+   teamCount:3, matches:0, pool:0, start:"—", end:"—", show:"—",
+   status:"草稿", active:false, ct:"2024-08-19 10:26:18", ut:"2024-08-19 10:26:18", by:"admin_zhang"},
+  {id:"JC2024081806", name:"亚冠淘汰赛正确比分", src:"充值比例", cond:"累计充值", condVal:500, tier:"层级1", vip:"VIP2",
+   teamCount:4, matches:4, pool:25000, start:"2024-09-05 00:00", end:"2024-09-28 23:59", show:"2024-09-02 00:00 ～ 2024-09-30 23:59",
+   status:"草稿", active:false, ct:"2024-08-18 15:44:03", ut:"2024-08-19 09:12:37", by:"admin_li"},
+  {id:"JC2024081901", name:"国际冠军杯冠军竞猜", src:"每日赠送", cond:"无条件", condVal:0, tier:"层级1", vip:"VIP2",
+   teamCount:6, matches:12, pool:50000, start:"2024-08-15 00:00", end:"2024-09-10 23:59", show:"2024-08-12 00:00 ～ 2024-09-15 23:59",
+   status:"进行中", active:true, ct:"2024-08-10 11:02:31", ut:"2024-08-18 09:41:05", by:"admin_zhang"},
+  {id:"JC2024081802", name:"夏季联赛全场比分", src:"充值比例", cond:"累计充值", condVal:1000, tier:"层级2", vip:"VIP5",
+   teamCount:5, matches:8, pool:30000, start:"2024-08-20 00:00", end:"2024-09-20 23:59", show:"2024-08-18 00:00 ～ 2024-09-22 23:59",
+   status:"未开始", active:true, ct:"2024-08-08 16:20:44", ut:"2024-08-17 14:08:19", by:"admin_li"},
+  {id:"JC2024081103", name:"东南亚邀请赛首球时间", src:"消费比例", cond:"累计打码", condVal:5000, tier:"层级2", vip:"VIP10",
+   teamCount:8, matches:20, pool:100000, start:"2024-07-01 00:00", end:"2024-07-31 23:59", show:"2024-06-28 00:00 ～ 2024-08-03 23:59",
+   status:"已结算", active:false, ct:"2024-06-25 10:15:02", ut:"2024-08-02 03:00:00", by:"system"},
+  {id:"JC2024080704", name:"欧冠小组赛总进球", src:"充值比例", cond:"累计充值", condVal:200, tier:"不限", vip:"不限",
+   teamCount:2, matches:0, pool:20000, start:"2024-09-01 00:00", end:"2024-09-30 23:59", show:"2024-08-28 00:00 ～ 2024-10-02 23:59",
+   status:"未开始", active:false, ct:"2024-08-07 09:33:10", ut:"2024-08-07 09:33:10", by:"admin_wang"},
+  {id:"JC2024072905", name:"世界杯预选赛竞猜", src:"每日赠送", cond:"无条件", condVal:0, tier:"层级1", vip:"VIP2",
+   teamCount:7, matches:15, pool:80000, start:"2024-08-01 00:00", end:"2024-08-18 23:59", show:"2024-07-29 00:00 ～ 2024-08-20 23:59",
+   status:"已截止", active:true, ct:"2024-07-29 14:50:27", ut:"2024-08-19 00:12:44", by:"admin_zhang"},
+  {id:"JC2024071206", name:"季前热身赛竞猜", src:"消费比例", cond:"累计打码", condVal:2000, tier:"层级3", vip:"VIP15",
+   teamCount:4, matches:6, pool:15000, start:"2024-07-15 00:00", end:"2024-07-25 23:59", show:"2024-07-12 00:00 ～ 2024-07-27 23:59",
+   status:"已关闭", active:false, ct:"2024-07-12 08:41:56", ut:"2024-07-22 17:30:08", by:"admin_li"}
+];
+
+const rows = [
+  {uid:16425983, account:"bettor999",  vip:"VIP 43", tier:"层级2", tag:"标签1",   bets:342, stake:398200, win:435910, prize:37710.00, earn:96800,  act:"国际冠军杯冠军竞猜"},
+  {uid:18264932, account:"gambler890", vip:"VIP 5",  tier:"层级1", tag:"高价值", bets:61,  stake:42800,  win:39760,  prize:3040.00,  earn:16520,  act:"国际冠军杯冠军竞猜"},
+  {uid:21976453, account:"casino567",  vip:"VIP 34", tier:"层级2", tag:"标签1",   bets:84,  stake:76500,  win:68120,  prize:8380.00,  earn:28300,  act:"夏季联赛全场比分"},
+  {uid:27239945, account:"user7890",   vip:"VIP 2",  tier:"层级1", tag:"高价值", bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"东南亚邀请赛首球时间"},
+  {uid:27419536, account:"winner456",  vip:"VIP 31", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"国际冠军杯冠军竞猜"},
+  {uid:27952467, account:"risk5678",   vip:"VIP 14", tier:"层级2", tag:"标签1",   bets:84,  stake:76500,  win:68120,  prize:8380.00,  earn:28300,  act:"夏季联赛全场比分"},
+  {uid:28543972, account:"luck123",    vip:"VIP 23", tier:"层级2", tag:"标签1",   bets:342, stake:398200, win:435910, prize:37710.00, earn:96800,  act:"国际冠军杯冠军竞猜"},
+  {uid:28943617, account:"prize456",   vip:"VIP 41", tier:"层级4", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"国际冠军杯冠军竞猜"},
+  {uid:34529861, account:"profit901",  vip:"VIP 17", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"东南亚邀请赛首球时间"},
+  {uid:36295874, account:"luck777",    vip:"SVIP 9", tier:"层级2", tag:"标签1",   bets:342, stake:398200, win:435910, prize:37710.00, earn:96800,  act:"国际冠军杯冠军竞猜"},
+  {uid:36591487, account:"spin777",    vip:"VIP 26", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"国际冠军杯冠军竞猜"},
+  {uid:39472681, account:"money345",   vip:"VIP 50", tier:"层级2", tag:"标签1",   bets:61,  stake:42800,  win:39760,  prize:3040.00,  earn:16520,  act:"国际冠军杯冠军竞猜"},
+  {uid:39521784, account:"spin234",    vip:"VIP 44", tier:"层级2", tag:"标签1",   bets:84,  stake:76500,  win:68120,  prize:8380.00,  earn:28300,  act:"夏季联赛全场比分"},
+  {uid:45793264, account:"fortune678", vip:"VIP 10", tier:"层级2", tag:"风险关注", bets:61, stake:42800, win:39760,  prize:3040.00,  earn:16520,  act:"国际冠军杯冠军竞猜"},
+  {uid:47289613, account:"bettor456",  vip:"VIP 27", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"东南亚邀请赛首球时间"}
+];
+
+const n  = v => v.toLocaleString("en-US");
+const n2 = v => v.toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+const tagCls = t => t==="风险关注" ? "tag-risk" : t==="高价值" ? "tag-high" : "";
+const statusPill = s => ({
+  "草稿":'<span class="pill pill-draft">草稿</span>',
+  "进行中":'<span class="pill pill-run">进行中</span>',
+  "未开始":'<span class="pill pill-wait">未开始</span>',
+  "已截止":'<span class="pill pill-wait">已截止</span>',
+  "已结算":'<span class="pill pill-done">已结算</span>',
+  "已关闭":'<span class="pill pill-off">已关闭</span>'
+}[s] || s);
+
+/* ===================== 配置列表 ===================== */
+let cfgData = [...cfgRows];
+
+const condText = r => {
+  if(r.cond === "无条件") return '<span class="sub">无条件</span>';
+  if(r.cond === "累计充值") return `累计充值 ≥ <span class="num">¥${n(r.condVal)}</span>`;
+  return `累计打码 ≥ <span class="num">${n(r.condVal)}</span>`;
+};
+
+function renderCfg(){
+  document.getElementById("cfgBody").innerHTML = cfgData.map((r,i)=>{
+    const canOpen = r.matches > 0;
+    const draft   = r.status === "草稿";
+    return `
+    <tr>
+      <td class="num">${r.id}</td>
+      <td>${r.name}</td>
+      <td>${r.src}</td>
+      <td>${condText(r)}</td>
+      <td>${r.tier==="不限" ? '<span class="sub">不限</span>' : r.tier}</td>
+      <td>${r.vip==="不限" ? '<span class="sub">不限</span>' : r.vip}</td>
+      <td>${canOpen
+            ? `<span class="link" onclick="openMatches('${r.id}')">${r.matches}</span>`
+            : `<span class="link disabled" title="赛事数量为 0">0</span>`}</td>
+      <td class="two-line num">${r.start==="—"
+            ? '<span class="sub">未设置</span>'
+            : `${r.start}<br><span class="sub">～ ${r.end}</span>`}</td>
+      <td class="two-line num sub">${r.show==="—" ? "未设置" : r.show.replace("～","<br>～")}</td>
+      <td class="num">${r.pool ? n2(r.pool) : '<span class="sub">未设置</span>'}</td>
+      <td><div class="status-cell">
+        ${statusPill(r.status)}
+        ${draft ? "" : `<span class="pill ${r.active?'pill-done':'pill-off'}">${r.active?"已启用":"未启用"}</span>`}
+      </div></td>
+      <td class="num sub">${r.ct}</td>
+      <td class="num sub">${r.ut}</td>
+      <td>${r.by}</td>
+      <td>
+        <div class="ops">
+          <span class="link" onclick="openEditor('edit','${r.id}')">编辑</span><span class="sep">|</span>
+          <span class="link" onclick="openDetail('${r.id}')">详情</span><span class="sep">|</span>
+          <span class="link" onclick="openMatches('${r.id}')">赛事</span><span class="sep">|</span>
+          <span class="link more-trigger" onclick="openMore(event,${i})">更多<span class="arw">▾</span></span>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+/* ---------- 更多下拉 ---------- */
+const menu = document.getElementById("moreMenu");
+
+function openMore(e, i){
+  e.stopPropagation();
+  const r = cfgData[i];
+  const draft   = r.status === "草稿";
+  const closed  = r.status==="已关闭" || r.status==="已结算";
+  const canOpen = r.matches > 0;
+  const ready   = r.start !== "—" && r.pool > 0;
+
+  let toggleBtn;
+  if(draft){
+    toggleBtn = ready
+      ? `<button onclick="confirmPublish(${i})">发布并启用</button>`
+      : `<button disabled title="活动时间、瓜分奖金未设置">发布并启用</button>`;
+  }else if(closed){
+    toggleBtn = `<button disabled title="活动已结束，不可变更启用状态">${r.active?"停用":"启用"}</button>`;
+  }else if(!r.active && !canOpen){
+    toggleBtn = `<button disabled title="赛事数量为 0，不可启用">启用</button>`;
+  }else{
+    toggleBtn = `<button onclick="confirmToggle(${i})">${r.active?"停用":"启用"}</button>`;
+  }
+
+  menu.innerHTML = `
+    ${toggleBtn}
+    <div class="divider"></div>
+    <button onclick="hideMore();copyCfg('${r.name}')">复制</button>
+    ${draft
+      ? '<button disabled title="草稿未发布，不可派奖">派奖</button>'
+      : `<button onclick="hideMore();openAward('${r.id}','${r.name}')">派奖</button>`}
+    <div class="divider"></div>
+    ${draft
+      ? `<button class="danger" onclick="hideMore();confirmDelete(${i})">删除草稿</button>`
+      : closed
+        ? '<button disabled>关闭</button>'
+        : `<button class="danger" onclick="hideMore();openClose('${r.id}','${r.name}')">关闭</button>`}`;
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  menu.classList.add("show");
+  const mh = menu.offsetHeight;
+  const top = (rect.bottom + mh + 8 > window.innerHeight) ? rect.top - mh - 4 : rect.bottom + 4;
+  menu.style.top  = top + "px";
+  menu.style.left = Math.min(rect.left, window.innerWidth - menu.offsetWidth - 12) + "px";
+}
+function hideMore(){ menu.classList.remove("show"); }
+document.addEventListener("click", hideMore);
+window.addEventListener("scroll", hideMore, true);
+window.addEventListener("resize", hideMore);
+
+/* ---------- 通用确认 ---------- */
+const ICON_WARN = `<svg viewBox="0 0 24 24" stroke="#faad14"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.3v.2"/></svg>`;
+const ICON_INFO = `<svg viewBox="0 0 24 24" stroke="#1890ff"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.7v.2"/></svg>`;
+
+function confirm2({title, lead, desc, kv, icon, okText, danger, onOk}){
+  document.getElementById("cf-title").textContent = title;
+  document.getElementById("cf-icon").innerHTML = icon || ICON_WARN;
+  document.getElementById("cf-lead").textContent = lead;
+  document.getElementById("cf-desc").innerHTML = desc || "";
+  const kvBox = document.getElementById("cf-kv");
+  kvBox.innerHTML = (kv||[]).map(([k,v])=>`<div><span>${k}</span><span>${v}</span></div>`).join("");
+  kvBox.style.display = (kv && kv.length) ? "" : "none";
+  const ok = document.getElementById("cf-ok");
+  ok.textContent = okText || "确认";
+  ok.style.background = danger ? "#cf1322" : "";
+  ok.style.borderColor = danger ? "#cf1322" : "";
+  ok.onclick = ()=>{ closeMask("mask-confirm"); onOk && onOk(); };
+  openMask("mask-confirm");
+}
+
+/* 草稿发布 */
+function confirmPublish(i){
+  hideMore();
+  const r = cfgData[i];
+  confirm2({
+    title:"发布并启用",
+    icon: ICON_INFO,
+    lead:`确认发布「${r.name}」？`,
+    desc:`发布后活动进入正式状态，<strong>积分获取方式不可再修改</strong>。<br>
+          活动将在展示时间内对符合参与条件的会员可见。`,
+    kv:[["配置ID",r.id],["赛事数量",r.matches+" 场"],
+        ["积分获取",r.src],["瓜分奖金","¥ "+n2(r.pool)]],
+    okText:"确认发布",
+    onOk:()=>{
+      r.status = "未开始"; r.active = true;
+      r.ut = "2024-08-19 12:00:00"; r.by = "admin_current";
+      renderCfg();
+    }
+  });
+}
+
+/* 草稿删除 */
+function confirmDelete(i){
+  hideMore();
+  const r = cfgData[i];
+  confirm2({
+    title:"删除草稿",
+    lead:`确认删除「${r.name}」？`,
+    desc:`草稿删除后<strong>不可恢复</strong>，已录入的赛事数据一并清除。<br>
+          该活动从未发布，无会员数据受影响。`,
+    kv:[["配置ID",r.id],["赛事数量",r.matches+" 场"],["创建人",r.by]],
+    okText:"确认删除",
+    danger:true,
+    onOk:()=>{
+      const idx = cfgRows.indexOf(r);
+      if(idx > -1) cfgRows.splice(idx,1);
+      cfgData = cfgData.filter(x=>x!==r);
+      renderCfg();
+    }
+  });
+}
+
+/* 启用 / 停用确认 */
+function confirmToggle(i){
+  hideMore();
+  const r = cfgData[i];
+  const turnOff = r.active;
+
+  confirm2({
+    title: turnOff ? "停用活动" : "启用活动",
+    icon:  turnOff ? ICON_WARN : ICON_INFO,
+    lead:  turnOff ? `确认停用「${r.name}」？` : `确认启用「${r.name}」？`,
+    desc:  turnOff
+      ? `停用后前端竞猜入口<strong>立即隐藏</strong>，会员无法继续投注。<br>
+         已投注的注单不受影响，仍会按原规则结算派奖。<br>
+         该操作可逆，后续可重新启用。`
+      : `启用后活动将在展示时间内对符合参与条件的会员可见。<br>
+         活动时间开始后即可投注。`,
+    kv: [
+      ["配置ID", r.id],
+      ["赛事数量", r.matches + " 场"],
+      ["活动状态", r.status],
+      ["瓜分奖金", "¥ " + n2(r.pool)]
+    ],
+    okText: turnOff ? "确认停用" : "确认启用",
+    danger: turnOff,
+    onOk: ()=>{
+      r.active = !r.active;
+      r.ut = "2024-08-19 12:00:00";
+      r.by = "admin_current";
+      renderCfg();
+    }
+  });
+}
+
+function cfgSearch(){
+  const kw = document.getElementById("cfgKw").value.trim().toLowerCase();
+  cfgData = kw ? cfgRows.filter(r=>r.name.toLowerCase().includes(kw)||r.id.toLowerCase().includes(kw)) : [...cfgRows];
+  renderCfg();
+}
+function cfgReset(){
+  document.querySelectorAll("#page-config .fld").forEach(i=>i.value="");
+  document.querySelectorAll("#page-config .sel").forEach(s=>s.selectedIndex=0);
+  cfgData=[...cfgRows]; renderCfg();
+}
+
+/* 总开关 */
+document.getElementById("masterSwitch").addEventListener("change", function(){
+  const hint = document.getElementById("masterHint");
+  hint.textContent = this.checked
+    ? "关闭后前端入口隐藏，已投注单不受影响"
+    : "已关闭 · 前端竞猜入口全部隐藏，进行中的活动仍会正常结算";
+  hint.style.color = this.checked ? "" : "#cf1322";
+});
+
+/* 编辑器 */
+function openEditor(mode, id){
+  const map = {create:["新增活动","活动创建后，积分获取方式不可修改"],
+               edit:["编辑活动",""]};
+  const r = id ? cfgRows.find(x=>x.id===id) : null;
+  document.getElementById("ed-title").textContent = map[mode][0];
+  document.getElementById("ed-sub").textContent = r
+    ? `${r.id} · ${r.name}　|　状态：${r.status}`
+    : map[mode][1];
+
+  applyEditorLock(r && r.status !== "草稿" ? r : null);
+  openMask("mask-editor");
+}
+
+/* 已发布活动：时间字段中仅活动结束时间可修改 */
+function applyEditorLock(r){
+  const tip = document.getElementById("edLockTip");
+  const LOCK = ["actStart", "showStart", "showEnd"];
+
+  // 解除锁定
+  edLocked = false;
+  ["actStart","actEnd","showStart","showEnd","sameTime"].forEach(id=>
+    document.getElementById(id).disabled = false);
+  document.querySelectorAll("#mask-editor .btn-long").forEach(b=>b.disabled = false);
+  document.querySelectorAll("#mask-editor .fb").forEach(fb=>
+    fb.classList.remove("locked","editable"));
+  document.getElementById("edTimeWarn").style.display = "none";
+  tip.style.display = "none";
+  document.getElementById("edSaveBtn").textContent = "保存草稿";
+  document.getElementById("edPubBtn").style.display = "";
+
+  if(!r){ syncShow(); return; }
+
+  // 已发布：锁定活动开始、展示开始、展示结束
+  edLocked = true;
+  LOCK.forEach(id=>document.getElementById(id).disabled = true);
+  document.getElementById("sameTime").disabled = true;
+  document.querySelectorAll("#mask-editor .btn-long").forEach(b=>b.disabled = true);
+
+  document.querySelectorAll("#mask-editor .fb").forEach(fb=>{
+    if(fb.querySelector("#actEnd"))  fb.classList.add("editable");
+    if(fb.querySelector("#showEnd")) fb.classList.add("locked");
+  });
+
+  document.getElementById("edLockTxt").innerHTML =
+    `该活动已发布（当前状态：<strong>${r.status}</strong>）。` +
+    `<br>活动开始时间、展示开始时间、展示结束时间<strong>不可修改</strong>；` +
+    `仅<strong>活动结束时间</strong>允许调整。`;
+  tip.style.display = "";
+
+  document.getElementById("edSaveBtn").textContent = "保存修改";
+  document.getElementById("edPubBtn").style.display = "none";
+  document.getElementById("actEnd").min = "2024-08-19T12:00";
+}
+function copyCfg(name){
+  confirm2({
+    title:"复制活动",
+    icon: ICON_INFO,
+    lead:`确认复制「${name}」？`,
+    desc:`将按相同规则生成一个新活动，状态为<strong>未启用</strong>。<br>
+          赛事数据<strong>不随复制生成</strong>，需在赛事管理中重新添加。`,
+    okText:"确认复制"
+  });
+}
+
+function openClose(id,name){
+  document.getElementById("cl-sub").textContent = `${id} · ${name}`;
+  openMask("mask-close");
+}
+function openAward(id,name){
+  document.getElementById("aw-sub").textContent = `${id} · ${name}`;
+  openMask("mask-award");
+}
+
+
+
+
+
+
+
+/* ============ 录入赛况 ============ */
+const RD_TEAMS = ["Việt Nam","Thái Lan","Indonesia","Malaysia","Singapore","Philippines"];
+let rdCur = null, rdRounds = [], rdIdx = 0, rdEditIdx = null;
+let rdMode = "league", rdLeague = null, rdCup = null;
+
+function mkRdRows(cnt){
+  return Array.from({length:cnt},(_,i)=>{
+    const done = i < 2;
+    return {
+      start:`2024-08-${String(14+i).padStart(2,"0")} 20:00:00`,
+      end:`2024-08-${String(14+i).padStart(2,"0")} 21:50:00`,
+      t1: RD_TEAMS[i % RD_TEAMS.length],
+      t2: RD_TEAMS[(i+1) % RD_TEAMS.length],
+      o1:(1.60+i*0.12).toFixed(2), o2:(2.40+i*0.15).toFixed(2), od:(3.20+i*0.08).toFixed(2),
+      win: done ? (i % 2 ? "客胜" : "主胜") : null,
+      draw: done ? "已开奖" : "未开奖",
+      pub:  i < 4 ? "已发布" : "未发布",
+      by: done ? (i%2 ? "admin_zhang" : "admin_li") : null,
+      at: done ? `2024-08-${String(14+i).padStart(2,"0")} 22:10:33` : null
+    };
+  });
+}
+
+function openMatches(id){
+  rdCur = cfgRows.find(x=>x.id===id);
+  if(!rdCur) return;
+  const n = Math.min(rdCur.matches || 0, 6);
+  rdLeague = [{ name: rdCur.name, rows: n ? mkRdRows(n) : [] }];
+  rdCup    = [{ name: "决赛", rows: n ? mkRdRows(Math.min(n,2)) : [] }];
+  rdMode = "league";
+  document.getElementById("mt-sub").textContent =
+    `${rdCur.id} · ${rdCur.name}　|　队伍数量：${rdCur.teamCount}`;
+  document.getElementById("rdFilterDraw").value = "";
+  document.getElementById("rdFilterPub").value = "";
+
+  // 队伍为单数时锁定杯赛配置
+  const odd = rdCur.teamCount % 2 !== 0;
+  const tabs = document.querySelectorAll("#rdMode div");
+  tabs.forEach((d,i)=>{
+    d.classList.toggle("on", i===0);
+    if(i===1){
+      d.classList.toggle("disabled", odd);
+      d.title = odd ? "队伍数量为单数，无法两两配对，不可配置杯赛" : "";
+    }
+  });
+  const tip = document.getElementById("rdOddTip");
+  tip.style.display = odd ? "" : "none";
+  if(odd) document.getElementById("rdOddTxt").innerHTML =
+    `当前活动配置了 <strong>${rdCur.teamCount}</strong> 支队伍，为单数，无法两两配对，因此<strong>仅可配置联赛</strong>。如需配置杯赛，请先将队伍数量调整为双数。`;
+
+  applyMode();
+  openMask("mask-matches");
+}
+
+/* 赛制切换 */
+function rdSetMode(m){
+  if(rdMode === m) return;
+  if(m === "cup" && rdCur && rdCur.teamCount % 2 !== 0){
+    confirm2({
+      title:"无法配置杯赛", icon:ICON_WARN,
+      lead:`当前活动共 ${rdCur.teamCount} 支队伍，为单数`,
+      desc:"杯赛需要队伍两两配对晋级，队伍数量为单数时无法成局。<br>请先在活动配置中将队伍数量调整为双数，或改用联赛配置。",
+      kv:[["活动", rdCur.name],["队伍数量", rdCur.teamCount + " 支"]],
+      okText:"知道了"
+    });
+    return;
+  }
+  rdMode = m;
+  document.querySelectorAll("#rdMode div").forEach(d=>
+    d.classList.toggle("on", d.textContent.trim() === (m==="league" ? "联赛配置" : "杯赛配置")));
+  applyMode();
+}
+
+function applyMode(){
+  const cup = rdMode === "cup";
+  rdRounds = cup ? rdCup : rdLeague;
+  rdIdx = 0;
+  document.getElementById("rdTabs").style.display = cup ? "" : "none";
+  document.getElementById("rdLangTip").style.display = cup ? "" : "none";
+  if(cup) renderRdTabs();
+  else renderRd();
+}
+
+function renderRdTabs(){
+  document.getElementById("rdTabs").innerHTML =
+    rdRounds.map((r,i)=>`
+      <div class="rd-tab ${i===rdIdx?"on":""}" onclick="rdPick(${i})">
+        <input value="${r.name}" placeholder="请输入" onclick="event.stopPropagation()"
+               oninput="rdRounds[${i}].name=this.value;syncRdName()"
+               placeholder="请输入轮次名称">
+        ${i===rdIdx && rdRounds.length>1 ? `<span class="x" onclick="event.stopPropagation();rdDel(${i})">×</span>` : ""}
+      </div>`).join("") +
+    `<button class="rd-add" onclick="rdAdd()">＋ 新增</button>`;
+  document.getElementById("rdCurName").textContent = rdRounds[rdIdx].name || "未命名轮次";
+  renderRd();
+}
+
+function rdPick(i){ rdIdx = i; renderRdTabs(); }
+
+function rdAdd(){
+  rdRounds.push({ name:"", rows:[{
+    start:null, end:null, t1:null, t2:null, o1:null, o2:null, od:null,
+    win:null, draw:"未开奖", pub:"未发布", by:null, at:null }] });
+  rdIdx = rdRounds.length - 1;
+  renderRdTabs();
+}
+
+function rdDel(i){
+  if(rdRounds.length <= 1) return;
+  rdRounds.splice(i,1);
+  rdIdx = Math.max(0, rdIdx-1);
+  renderRdTabs();
+}
+
+function syncRdName(){
+  document.getElementById("rdCurName").textContent = rdRounds[rdIdx].name || "未命名轮次";
+}
+
+function rdToggleBanner(){
+  const b = document.getElementById("rdBanner");
+  b.classList.add("hide");
+  const old = document.getElementById("rdShow");
+  if(old) old.remove();
+  const h = document.createElement("div");
+  h.className = "rd-handle"; h.id = "rdShow"; h.textContent = "⌄";
+  h.style.cssText = "position:static;transform:none;margin:14px auto 0;border-radius:0 0 8px 8px";
+  h.onclick = ()=>{ h.remove(); b.classList.remove("hide"); };
+  b.parentNode.insertBefore(h, b.nextSibling);
+}
+
+function rdReset(){
+  document.getElementById("rdFilterDraw").value = "";
+  document.getElementById("rdFilterPub").value = "";
+  renderRd();
+}
+
+const D = v => (v == null || v === "") ? '<span class="dash-c">--</span>' : v;
+
+function renderRd(){
+  const fd = document.getElementById("rdFilterDraw").value;
+  const fp = document.getElementById("rdFilterPub").value;
+  let rows = rdRounds[rdIdx].rows.map((r,i)=>({...r, _i:i}));
+  if(fd) rows = rows.filter(r=>r.draw===fd);
+  if(fp) rows = rows.filter(r=>r.pub===fp);
+
+  const body = document.getElementById("rdBody");
+  if(!rows.length){
+    body.innerHTML = `<tr><td colspan="12"><div class="rd-empty">暂无数据</div></td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map(r=>`
+    <tr class="${r.start==null?"on":""}">
+      <td>${D(r.start)}</td><td>${D(r.t1)}</td><td>${D(r.o1)}</td>
+      <td>${D(r.t2)}</td><td>${D(r.o2)}</td><td>${D(r.od)}</td>
+      <td>${D(r.win)}</td>
+      <td><span class="${r.draw==="已开奖"?"st-ok":"st-warn"}">${r.draw}</span></td>
+      <td>${r.pub}</td>
+      <td>${r.draw==="已开奖"
+            ? (r.fixed
+                ? '<span class="link disabled" title="开奖结果仅可修改一次">修正开奖结果</span>'
+                : `<span class="link" onclick="openFix(${r._i})">修正开奖结果</span>`)
+            : `<span class="link" onclick="openRdForm(${r._i})">修改</span>`}</td>
+      <td>${D(r.by)}</td><td>${D(r.at)}</td>
+    </tr>`).join("");
+}
+
+function openRdForm(i){
+  rdEditIdx = i;
+  const r = rdRounds[rdIdx].rows[i];
+  const locked = r.pub === "已发布";
+  document.getElementById("mf-sub").textContent =
+    `${rdRounds[rdIdx].name || "未命名"} · 第 ${i+1} 场`;
+
+  const opts = ['<option value="">请选择</option>']
+    .concat(RD_TEAMS.map(t=>`<option>${t}</option>`)).join("");
+  const t1 = document.getElementById("mfT1"), t2 = document.getElementById("mfT2");
+  t1.innerHTML = opts; t2.innerHTML = opts;
+  t1.value = r.t1 || ""; t2.value = r.t2 || "";
+  t1.disabled = t2.disabled = locked;
+  document.getElementById("mfLock").textContent = locked
+    ? "该场比赛已发布生效，队伍不可修改。"
+    : "队伍来自活动配置中的队伍列表，两队不可相同。";
+
+  // 活动时间区间约束
+  const actS = rdCur && rdCur.start !== "—" ? rdCur.start.replace(" ","T") : null;
+  const actE = rdCur && rdCur.end   !== "—" ? rdCur.end.replace(" ","T")   : null;
+  ["mfStart","mfEnd"].forEach(k=>{
+    const el = document.getElementById(k);
+    if(actS) el.min = actS; else el.removeAttribute("min");
+    if(actE) el.max = actE; else el.removeAttribute("max");
+  });
+  document.getElementById("mfRange").innerHTML = actS
+    ? `须落在活动时间区间内：<strong>${rdCur.start} ～ ${rdCur.end}</strong>。超出区间无法提交。`
+    : "该活动尚未设置活动时间，请先补全后再录入赛事。";
+
+  document.getElementById("mfStart").value = r.start ? r.start.slice(0,16).replace(" ","T") : "";
+  document.getElementById("mfEnd").value   = r.end   ? r.end.slice(0,16).replace(" ","T")   : "";
+  document.getElementById("mfO1").value = r.o1 || "";
+  document.getElementById("mfOD").value = r.od || "";
+  document.getElementById("mfO2").value = r.o2 || "";
+
+  const NOW = new Date("2024/08/19 12:00");
+  const ended = !!r.end && new Date(r.end.replace(/-/g,"/")) < NOW;
+  const win = document.getElementById("mfWin");
+  win.innerHTML = '<option value="">请选择</option>'
+    + `<option>主胜</option><option>平局</option><option>客胜</option>`;
+  win.value = r.win || "";
+  win.disabled = !ended;
+  document.getElementById("mfWinHint").textContent = ended
+    ? "设置赛果并发布后，将触发结算派奖。"
+    : "比赛结束后才能设置赛果。";
+
+  document.getElementById("mfErr").textContent = "";
+  openMask("mask-mform");
+}
+
+function saveRdRow(){
+  const r = rdRounds[rdIdx].rows[rdEditIdx];
+  const t1 = document.getElementById("mfT1").value;
+  const t2 = document.getElementById("mfT2").value;
+  const os = ["mfO1","mfOD","mfO2"].map(k=>parseFloat(document.getElementById(k).value));
+  const err = document.getElementById("mfErr");
+
+  if(t1 && t2 && t1 === t2){ err.textContent = "队伍1与队伍2不可相同"; return; }
+  if(os.some(v=>!isNaN(v) && (v < 1.01 || v > 50))){
+    err.textContent = "赔率超出 1.01 ~ 50.00 的允许区间，无法提交"; return;
+  }
+
+  const st = document.getElementById("mfStart").value;
+  const et = document.getElementById("mfEnd").value;
+
+  // 赛事时间须落在活动时间区间内
+  if(rdCur && rdCur.start !== "—"){
+    const aS = new Date(rdCur.start.replace(/-/g,"/"));
+    const aE = new Date(rdCur.end.replace(/-/g,"/"));
+    const chk = [["开赛时间", st], ["结束时间", et]];
+    for(const [label, v] of chk){
+      if(!v) continue;
+      const d = new Date(v.replace("T"," ").replace(/-/g,"/"));
+      if(d < aS || d > aE){
+        err.innerHTML = `${label}超出活动时间区间（${rdCur.start} ～ ${rdCur.end}），无法提交`;
+        return;
+      }
+    }
+    if(st && et){
+      const dS = new Date(st.replace("T"," ").replace(/-/g,"/"));
+      const dE = new Date(et.replace("T"," ").replace(/-/g,"/"));
+      if(dE <= dS){ err.textContent = "结束时间须晚于开赛时间"; return; }
+    }
+  }
+
+  Object.assign(r, {
+    start: st ? st.replace("T"," ") + ":00" : r.start,
+    end:   et ? et.replace("T"," ") + ":00" : r.end,
+    t1: t1 || r.t1, t2: t2 || r.t2,
+    o1: isNaN(os[0]) ? r.o1 : os[0].toFixed(2),
+    od: isNaN(os[1]) ? r.od : os[1].toFixed(2),
+    o2: isNaN(os[2]) ? r.o2 : os[2].toFixed(2),
+    win: document.getElementById("mfWin").value || r.win,
+    by: "admin_current", at: "2024-08-19 12:00:00"
+  });
+  if(r.win) r.draw = "已开奖";
+  closeMask("mask-mform");
+  renderRd();
+}
+
+function rdSave(){
+  confirm2({ title:"保存", icon:ICON_INFO, lead:"已保存当前轮次的赛事配置",
+    desc:"保存仅写入后台，<strong>客户端尚未生效</strong>。需点击「发布更新」后前端才会展示。",
+    okText:"知道了" });
+}
+
+function rdPublish(){
+  const rows = rdRounds[rdIdx].rows;
+  const pending = rows.filter(r=>r.pub === "未发布").length;
+  const settle  = rows.filter(r=>r.win && r.pub === "未发布").length;
+  confirm2({
+    title:"发布更新",
+    lead:`确认发布「${rdRounds[rdIdx].name || (rdMode==="cup" ? "未命名轮次" : "未命名联赛")}」的赛事更新？`,
+    desc:`发布后客户端立即生效，已发布的队伍不可再修改。<br>
+          已录入赛果的场次将<strong>触发结算派奖</strong>，按注单终态做幂等，重复发布不会重复派奖。`,
+    kv:[["待发布场次", pending + " 场"],["将触发结算", settle + " 场"],
+        [rdMode==="cup" ? "轮次" : "联赛", rdRounds[rdIdx].name || "未命名"]],
+    okText:"确认发布",
+    onOk:()=>{ rows.forEach(r=>{ r.pub = "已发布"; if(r.win) r.draw = "已开奖"; }); renderRd(); }
+  });
+}
+
+
+
+/* ---------- 修正开奖结果 ---------- */
+let fxIdx = null;
+
+function openFix(i){
+  fxIdx = i;
+  const r = rdRounds[rdIdx].rows[i];
+
+  document.getElementById("fxInfo").innerHTML = `
+    <tr><th>开赛时间</th><td>${r.start || "--"}</td></tr>
+    <tr><th>队伍1 / 赔率</th><td>${r.t1 || "--"} / ${r.o1 || "--"}</td></tr>
+    <tr><th>队伍2 / 赔率</th><td>${r.t2 || "--"} / ${r.o2 || "--"}</td></tr>
+    <tr><th>平局赔率</th><td>${r.od || "--"}</td></tr>
+    <tr><th>赛果</th><td>${r.win || "--"}</td></tr>`;
+
+  const win = document.getElementById("fxWin");
+  win.innerHTML = '<option>主胜</option><option>平局</option><option>客胜</option>';
+  win.value = r.win || "";
+  fxSyncOdds();
+
+  document.querySelector('input[name="fxAdd"][value="1"]').checked = true;
+  document.querySelector('input[name="fxSub"][value="0"]').checked = true;
+  document.querySelectorAll('input[name="fxAdd"],input[name="fxSub"]').forEach(x=>
+    x.closest(".rd").classList.toggle("on", x.checked));
+
+  openMask("mask-fix");
+}
+
+function fxSyncOdds(){
+  const r = rdRounds[rdIdx].rows[fxIdx];
+  const v = document.getElementById("fxWin").value;
+  const odds = v === "主胜" ? r.o1 : v === "客胜" ? r.o2 : r.od;
+  document.getElementById("fxOdds").value = odds || "";
+}
+
+function saveFix(){
+  const r = rdRounds[rdIdx].rows[fxIdx];
+  const newWin = document.getElementById("fxWin").value;
+  const add = document.querySelector('input[name="fxAdd"]:checked').value === "1";
+  const sub = document.querySelector('input[name="fxSub"]:checked').value === "1";
+
+  if(newWin === r.win){
+    confirm2({ title:"提示", icon:ICON_WARN, lead:"赛果未发生变化",
+      desc:"请选择与当前不同的赛果后再提交。", okText:"知道了" });
+    return;
+  }
+
+  closeMask("mask-fix");
+  confirm2({
+    title:"确认修正开奖结果",
+    lead:`将赛果由「${r.win}」修正为「${newWin}」？`,
+    desc:`开奖结果<strong>仅可修改一次</strong>，提交后不可再次修正。<br>
+          系统将按所选处理方式生成冲正单，需复核通过后执行。`,
+    kv:[["赛事", `${r.t1} VS ${r.t2}`],
+        ["修正后赔率", document.getElementById("fxOdds").value],
+        ["补发积分", add ? "是" : "否"],
+        ["扣除错误积分", sub ? "是" : "否"]],
+    okText:"确认提交", danger:true,
+    onOk:()=>{
+      r.win = newWin; r.fixed = true;
+      r.by = "admin_current"; r.at = "2024-08-19 12:00:00";
+      renderRd();
+    }
+  });
+}
+
+/* ============ 活动详情 ============ */
+const EARN_TEXT = {
+  "每日赠送":"每日进入活动，可获得 100 积分（如未进入活动不可获得当天积分）",
+  "充值比例":"按充值比例赠送，每充值 1 元获得 10 积分（指定渠道：Nap Nhanh、Zalo Pay）",
+  "消费比例":"按打码比例赠送，每有效投注 1 元获得 2 积分（全部场馆）"
+};
+
+function row(k, v){
+  return `<div class="dt"><div class="dt-k">${k}</div><div class="dt-v">${v}</div></div>`;
+}
+
+function openDetail(id){
+  const r = cfgRows.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById("dt-sub").textContent = `${r.id} · ${r.status}`;
+
+  const teams = ["Việt Nam","Thái Lan","Indonesia","Malaysia"].slice(0, Math.max(2, Math.min(4, r.matches||2)));
+  const teamTable = `
+    <table class="dt-team">
+      <thead><tr><th>编号</th><th>队伍Icon</th><th>队伍名称</th></tr></thead>
+      <tbody>${teams.map((t,i)=>
+        `<tr><td>${i+1}</td><td><div class="dt-flag"></div></td><td>${t}</td></tr>`).join("")}</tbody>
+    </table>`;
+
+  document.getElementById("dtL").innerHTML =
+    row("活动排序", "999999") +
+    row("活动名称", r.name) +
+    row("活动时间", r.start==="—" ? '<span class="muted">未设置</span>' : `${r.start}:00 - ${r.end}:59`) +
+    row("展示时间", r.show==="—" ? '<span class="muted">未设置</span>' : r.show.replace("～","-")) +
+    row("参与条件", condText(r)) +
+    row("获取积分", EARN_TEXT[r.src] || r.src) +
+    row("积分上限", "100,000") +
+    row("下注限额", "100.00 ~ 500.00") +
+    row("实际瓜分金额", r.pool ? n2(r.pool) : '<span class="muted">未设置</span>') +
+    row("展示瓜分金额", r.pool ? n2(r.pool * 40) : '<span class="muted">未设置</span>') +
+    row("瓜分方式", "未下注会员可参与瓜分") +
+    row("队伍配置", teamTable);
+
+  document.getElementById("dtR").innerHTML =
+    row("活动申领终端", "WEB、Android_H5、iOS_H5、Android_PWA、iOS_PWA、Android_APK、iOS描述签") +
+    row("更多申领限制", "完成手机短信验证、相同IP地址只能领取 1 次") +
+    row("条件限制参与", "不限制") +
+    row("参与层级", r.tier === "不限" ? "全部层级" : r.tier) +
+    row("参与VIP等级", r.vip === "不限" ? "全部VIP等级" : `${r.vip} 及以上`) +
+    row("指定代理账号", "否") +
+    row("稽核倍数", "1.00 倍 + 0.00") +
+    row("创建时间", r.ct) +
+    row("更新时间", r.ut) +
+    row("更新人", r.by) +
+    row("规则说明", `<ol>
+      <li>活动期间内，每日进入活动可获得积分，未进入活动页面则不可获得当天积分。您可用积分进行押注，以便赢得更多积分。</li>
+      <li>仅开赛前可下注，且只能选择胜、负或平局三选一，不能多选。一旦比赛开始，就直接封盘，停止下注。</li>
+      <li>活动结束后，按个人积分占全体合格会员积分总和的比例瓜分实际瓜分金额，奖金四舍五入保留两位小数。</li>
+      <li>奖金需完成稽核倍数要求后方可提现。平台保留最终解释权。</li>
+    </ol>`);
+
+  openMask("mask-detail");
+}
+
+/* ============ 新增活动弹窗交互 ============ */
+function pickLang(el){
+  el.parentNode.querySelectorAll("span").forEach(x=>x.classList.remove("on"));
+  el.classList.add("on");
+}
+function toggleAll(master, cls){
+  document.querySelectorAll("." + cls).forEach(c=>{
+    c.checked = master.checked;
+    c.closest(".cb").classList.toggle("on", c.checked);
+  });
+  master.closest(".cb").classList.toggle("on", master.checked);
+}
+
+/* 勾选 / 单选高亮 */
+document.addEventListener("change", e=>{
+  const t = e.target;
+  if(t.type === "checkbox" && t.closest(".cb"))
+    t.closest(".cb").classList.toggle("on", t.checked);
+  if(t.type === "radio" && t.closest(".rd")){
+    document.querySelectorAll(`input[name="${t.name}"]`).forEach(r=>
+      r.closest(".rd") && r.closest(".rd").classList.toggle("on", r.checked));
+  }
+});
+
+/* 长期按钮 */
+function toggleLong(btn, which){
+  const on = btn.classList.contains("off");
+  btn.classList.toggle("off", !on);
+  const box = which === "act" ? btn.previousElementSibling : document.getElementById("showRange");
+  box.classList.toggle("dim", on);
+  box.querySelectorAll("input").forEach(i=>{ i.disabled = on; if(on) i.value = ""; });
+  if(which === "act") syncShow();
+}
+
+/* 展示时间跟随活动时间 */
+function syncShow(){
+  const same = document.getElementById("sameTime");
+  if(edLocked){
+    // 锁定态：校验活动结束时间不得超出展示结束时间
+    const ae = document.getElementById("actEnd").value;
+    const se = document.getElementById("showEnd").value;
+    const warn = document.getElementById("edTimeWarn");
+    if(ae && se && new Date(ae.replace("T"," ").replace(/-/g,"/")) >
+                   new Date(se.replace("T"," ").replace(/-/g,"/"))){
+      warn.textContent = "活动结束时间不可晚于展示结束时间（" + se.replace("T"," ") + "），展示时间须包含活动时间";
+      warn.style.display = "";
+    }else{
+      warn.style.display = "none";
+    }
+    return;
+  }
+  const box  = document.getElementById("showRange");
+  const ss = document.getElementById("showStart"), se = document.getElementById("showEnd");
+  if(same.checked){
+    box.classList.add("dim"); ss.disabled = se.disabled = true;
+    ss.value = document.getElementById("actStart").value;
+    se.value = document.getElementById("actEnd").value;
+  }else{
+    box.classList.remove("dim"); ss.disabled = se.disabled = false;
+  }
+}
+
+/* 队伍行 */
+function addTeam(){
+  const row = document.createElement("div");
+  row.className = "team-row";
+  row.innerHTML = `
+    <span class="no"></span>
+    <span class="team-icon-wrap"><span class="team-up" onclick="this.classList.toggle('filled')">+</span></span>
+    <input class="fld" style="flex:1" placeholder="请输入队伍名称">
+    <button class="icon-btn pri add" onclick="addTeam()">+</button>
+    <button class="icon-btn del" onclick="delTeam(this)">×</button>`;
+  document.getElementById("teamRows").appendChild(row);
+  renumTeams();
+}
+function delTeam(btn){
+  const rows = document.getElementById("teamRows");
+  if(rows.children.length <= 2) return;
+  btn.closest(".team-row").remove();
+  renumTeams();
+}
+function renumTeams(){
+  const rows = [...document.getElementById("teamRows").children];
+  rows.forEach((r,i)=>{
+    r.querySelector(".no").textContent = i + 1;
+    r.querySelector(".add").style.visibility = (i === rows.length-1) ? "visible" : "hidden";
+    r.querySelector(".del").disabled = rows.length <= 2;
+  });
+
+  const odd = rows.length % 2 !== 0;
+  const tag = document.getElementById("teamCount");
+  if(tag){
+    tag.className = "team-count " + (odd ? "odd" : "even");
+    tag.textContent = `共 ${rows.length} 支 · ${odd ? "单数，仅可配置联赛" : "双数"}`;
+  }
+  const warn = document.getElementById("teamWarn");
+  if(warn) warn.style.opacity = odd ? "1" : ".55";
+}
+
+
+/* 瓜分方式 */
+function onShareMode(el){
+  document.getElementById("shareHint").textContent = el.value === "all"
+    ? "凡在本活动内获得过积分的会员均计入瓜分分母，无论是否投注。"
+    : "仅在本活动内有过至少 1 笔有效投注的会员计入瓜分分母；只领积分未投注的会员不参与分配。";
+}
+
+/* 参与条件联动 */
+function onJoinCond(el){
+  const v = el.value;
+  document.getElementById("jcDepRow").style.display  = v==="dep" ? "" : "none";
+  document.getElementById("jcPayRow").style.display  = v==="dep" ? "" : "none";
+  document.getElementById("jcWagRow").style.display  = v==="wag" ? "" : "none";
+  document.getElementById("jcPlatRow").style.display = v==="wag" ? "" : "none";
+}
+
+/* 获取积分联动 */
+function onEarn(){
+  const v = document.getElementById("earnType").value;
+  document.getElementById("earnRatioLabel").style.display = (v==="dep"||v==="wag") ? "" : "none";
+  document.getElementById("earnVal").placeholder =
+      v==="daily" ? "请输入每日赠送积分"
+    : (v==="dep"||v==="wag") ? "获得积分比例" : "请选择获取方式";
+  document.getElementById("earnPayRow").style.display  = v==="dep" ? "" : "none";
+  document.getElementById("earnPlatRow").style.display = v==="wag" ? "" : "none";
+}
+
+
+
+
+/* 规则说明字数统计 */
+function ruleCount(){
+  const v = document.getElementById("ruleBox").value;
+  document.getElementById("ruleCnt").textContent = `${v.length} / 2000`;
+  document.getElementById("ruleErr").textContent = v.length ? "" : "";
+}
+
+/* ---------- 充值渠道 ---------- */
+function chanCount(cls){
+  cls = cls || "jcpay";
+  document.querySelectorAll("." + cls).forEach(c=>
+    c.closest(".chan").classList.toggle("on", c.checked));
+  const box = document.getElementById(cls === "jcpay" ? "chanCnt" : cls + "Cnt");
+  if(box) box.textContent = document.querySelectorAll("." + cls + ":checked").length;
+}
+
+function onEarnPayMode(el){
+  document.getElementById("earnPayPick").style.display = el.value === "pick" ? "" : "none";
+}
+
+/* 截断文案悬浮提示 */
+const vtip = document.createElement("div");
+vtip.className = "vtip";
+document.body.appendChild(vtip);
+
+document.addEventListener("mouseover", e=>{
+  const t = e.target.closest(".txt[data-full]");
+  if(!t || t.scrollWidth <= t.clientWidth) return;
+  vtip.textContent = t.dataset.full;
+  vtip.classList.add("show");
+  const r = t.getBoundingClientRect();
+  vtip.style.left = Math.max(8, r.left + r.width/2 - vtip.offsetWidth/2) + "px";
+  vtip.style.top  = (r.top - vtip.offsetHeight - 9) + "px";
+});
+document.addEventListener("mouseout", e=>{
+  if(e.target.closest(".txt[data-full]")) vtip.classList.remove("show");
+});
+
+/* ---------- 场馆三级选择器 ---------- */
+const VCATS = ["\u{1F3B2}","\u{1F3B0}","\u26BD","\u{1F3AE}","\u{1F0CF}","\u{1F3B1}","\u{1F004}","\u{1F3AF}","\u{1F3AA}"];
+const vState = {};
+
+function vInit(prefix){
+  if(vState[prefix]) return;
+  vState[prefix] = { cat:null, fac:null, picked:new Set() };
+  const cat = document.getElementById(prefix + "Cat");
+  cat.innerHTML = VCATS.map((ic,i)=>`
+    <div class="vrow" onclick="vPickCat('${prefix}',${i},this)">
+      <input type="checkbox" onclick="event.stopPropagation()">
+      <span class="ico">${ic}</span>
+      <span class="arw">›</span>
+    </div>`).join("");
+  vPickCat(prefix, 1, cat.children[1]);
+}
+
+function vPickCat(prefix, i, el){
+  vState[prefix].cat = i;
+  const cat = document.getElementById(prefix + "Cat");
+  [...cat.children].forEach(c=>c.classList.remove("on"));
+  el.classList.add("on");
+
+  const fac = document.getElementById(prefix + "Fac");
+  fac.innerHTML = Array.from({length:9},(_,k)=>`
+    <div class="vrow" onclick="vPickFac('${prefix}',${k+1},this)">
+      <input type="checkbox" onclick="event.stopPropagation();vCount('${prefix}')">
+      <span class="nm">factoryName${k+1}</span>
+      <span class="arw">›</span>
+    </div>`).join("");
+  vPickFac(prefix, 1, fac.children[0]);
+}
+
+function vPickFac(prefix, f, el){
+  vState[prefix].fac = f;
+  const fac = document.getElementById(prefix + "Fac");
+  [...fac.children].forEach(c=>c.classList.remove("on"));
+  el.classList.add("on");
+
+  const game = document.getElementById(prefix + "Game");
+  game.innerHTML = Array.from({length:14},(_,k)=>`
+    <div class="vrow">
+      <input type="checkbox" class="${prefix}-game" onchange="vCount('${prefix}')">
+      <span class="nm">gameName${f}-${k+1}</span>
+    </div>`).join("");
+}
+
+function vCount(prefix){
+  const n = document.querySelectorAll("." + prefix + "-game:checked").length;
+  document.getElementById(prefix + "Cnt").textContent = n;
+}
+
+function onVenueMode(prefix, el){
+  const box = document.getElementById(prefix + "Venue");
+  const show = el.value !== "all";
+  box.style.display = show ? "" : "none";
+  if(show) vInit(prefix);
+}
+
+/* 条件限制参与 */
+function onJoinLimit(show){
+  document.getElementById("regDayRow").style.display = show ? "" : "none";
+}
+
+/* 代理账号计数 */
+function countAcc(){
+  const v = document.getElementById("agentBox").value;
+  const n = v.split(/[\n,，]+/).map(x=>x.trim()).filter(Boolean).length;
+  document.getElementById("accCount").textContent = `已输入 ${n.toLocaleString("en-US")} 个账号`;
+  document.getElementById("accErr").textContent = n > 100000 ? "超出单次最多 100,000 个账号的限制" : "";
+}
+
+addTeam(); addTeam(); syncShow();
+
+/* ===================== 竞猜会员 ===================== */
+let data = [...rows];
+
+function render(){
+  document.getElementById("tbody").innerHTML = data.map(r=>`
+    <tr>
+      <td>${r.account}</td><td>${r.vip}</td><td>${r.tier}</td>
+      <td class="${tagCls(r.tag)}">${r.tag}</td>
+      <td><span class="link" onclick="openOrders(${r.uid})">${n(r.bets)}</span></td>
+      <td class="num">${n(r.stake)}</td>
+      <td class="num">${n(r.win)}</td>
+      <td class="num">${n2(r.prize)}</td>
+      <td><span class="link" onclick="openSource(${r.uid})">${n(r.earn)}</span></td>
+      <td class="num ${r.win - r.stake >= 0 ? "win" : "lose"}">${r.win - r.stake >= 0 ? "+" : ""}${n(r.win - r.stake)}</td>
+      <td>${r.act}</td>
+    </tr>`).join("") ||
+    `<tr><td colspan="11" style="text-align:center;color:#bfbfbf;padding:50px">暂无数据</td></tr>`;
+  const sum = k => data.reduce((a,r)=>a+r[k],0);
+  document.getElementById("s-bets").textContent  = n(sum("bets"));
+  document.getElementById("s-stake").textContent = n(sum("stake"));
+  document.getElementById("s-win").textContent   = n(sum("win"));
+  document.getElementById("s-prize").textContent = n2(sum("prize"));
+  document.getElementById("s-earn").textContent  = n(sum("earn"));
+  const net = sum("win") - sum("stake");
+  document.getElementById("s-net").textContent = (net >= 0 ? "+" : "") + n(net);
+  document.getElementById("mbTotal").textContent = `共 ${n(data.length)} 条`;
+}
+
+function search(){
+  const acc  = document.getElementById("mbAcc").value.trim().toLowerCase();
+  const vip  = document.getElementById("mbVip").value;
+  const tier = document.getElementById("mbTier").value;
+  const tag  = document.getElementById("mbTag").value;
+  const act  = document.getElementById("mbAct").value;
+
+  const vipNo = v => v.startsWith("SVIP") ? 999 : parseInt(v.replace(/\D/g,"")) || 0;
+  const inVip = v => {
+    if(vip.startsWith("全部")) return true;
+    if(vip === "SVIP") return v.startsWith("SVIP");
+    const [lo,hi] = vip.replace("VIP ","").split("-").map(Number);
+    return !v.startsWith("SVIP") && vipNo(v) >= lo && vipNo(v) <= hi;
+  };
+
+  data = rows.filter(r=>
+    (!acc || r.account.toLowerCase().includes(acc)) &&
+    inVip(r.vip) &&
+    (tier.startsWith("全部") || r.tier === tier) &&
+    (tag.startsWith("全部")  || r.tag  === tag) &&
+    (act.startsWith("全部")  || r.act  === act));
+  render();
+}
+function reset(){
+  document.querySelectorAll("#page-member .fld").forEach(i=>i.value="");
+  document.querySelectorAll("#page-member .sel").forEach(s=>s.selectedIndex=0);
+  document.querySelectorAll('th.sortable[data-tbl="mem"]').forEach(t=>t.classList.remove("asc","desc"));
+  data=[...rows]; render();
+}
+
+
+function openOrders(uid){
+  const r = rows.find(x=>x.uid===uid);
+  const caliber = document.getElementById("caliber").value;
+  const list = odRows.filter(o=>o.acc === r.account);
+
+  document.getElementById("o-sub").textContent =
+    `${r.account}（UID ${r.uid}）· ${r.vip} · ${r.tier}　|　时间口径：${caliber}　|　` +
+    `累计 ${n(r.bets)} 笔，本页展示最近 ${list.length} 笔`;
+
+  document.getElementById("o-body").innerHTML = list.map(o=>`
+    <tr>
+      <td class="num">${o.no}</td>
+      <td>${o.act}</td>
+      <td>${o.match}</td>
+      <td>${o.pick}</td>
+      <td><span class="odds-tag"><span class="num">${o.odds}</span><span class="snap">快照</span></span></td>
+      <td class="num">${n(o.stake)}</td>
+      <td class="num">${n(o.expect)}</td>
+      <td class="num ${o.actual ? (o.status==="已退还" ? "" : "win") : "lose"}">${o.actual == null ? "—" : n(o.actual)}</td>
+      <td class="num sub">${o.betAt}</td>
+      <td class="num sub">${o.settleAt || "—"}</td>
+      <td><span class="pill ${OD_PILL[o.status]}">${o.status}</span></td>
+    </tr>`).join("") ||
+    `<tr><td colspan="11" style="text-align:center;color:#bfbfbf;padding:40px">该会员在当前时间口径下暂无注单</td></tr>`;
+
+  openMask("mask-orders");
+}
+
+function openSource(uid){
+  const r = rows.find(x=>x.uid===uid);
+  const grant=Math.round(r.earn*0.34), deposit=Math.round(r.earn*0.28);
+  const wager=r.earn-grant-deposit, total=r.earn+r.win;
+  const list=[["系统派送（每日赠送）",grant,true],["充值比例赠送",deposit,true],
+              ["打码比例赠送",wager,true],["中奖积分",r.win,false]];
+  document.getElementById("m-sub").textContent = `${r.account}（UID ${r.uid}）· ${r.vip} · ${r.tier}`;
+  document.getElementById("m-body").innerHTML =
+    list.map(([name,val,c])=>`<tr><td>${name}</td><td>${n(val)}</td>
+      <td>${(val/total*100).toFixed(1)}%</td>
+      <td style="color:${c?'#389e0d':'#8c8c8c'}">${c?"计入":"不计入"}</td></tr>`).join("") +
+    `<tr class="inner-total"><td>合计</td><td>${n(total)}</td><td>100.0%</td><td>份额基数 ${n(r.earn)}</td></tr>`;
+  openMask("mask-source");
+}
+
+
+/* ===================== 竞猜明细 ===================== */
+const OD_ACTS = [
+  {cfg:"JC2024081901", name:"国际冠军杯冠军竞猜"},
+  {cfg:"JC2024081103", name:"东南亚邀请赛首球时间"},
+  {cfg:"JC2024072905", name:"世界杯预选赛竞猜"}
+];
+const OD_MEM = [
+  {acc:"bettor999",  vip:"VIP 43", tier:"层级2", tag:"标签1"},
+  {acc:"gambler890", vip:"VIP 5",  tier:"层级1", tag:"高价值"},
+  {acc:"casino567",  vip:"VIP 34", tier:"层级2", tag:"标签1"},
+  {acc:"user7890",   vip:"VIP 2",  tier:"层级1", tag:"高价值"},
+  {acc:"winner456",  vip:"VIP 31", tier:"层级2", tag:"标签1"},
+  {acc:"fortune678", vip:"VIP 10", tier:"层级2", tag:"风险关注"},
+  {acc:"luck123",    vip:"VIP 23", tier:"层级2", tag:"标签1"},
+  {acc:"spin777",    vip:"VIP 26", tier:"层级2", tag:"标签1"}
+];
+
+/* 每个活动下挂各自的赛事 */
+const ACT_MATCHES = {
+  "JC2024081901":[
+    {id:"MT20240801", t1:"Việt Nam",  t2:"Thái Lan"},
+    {id:"MT20240802", t1:"Indonesia", t2:"Malaysia"},
+    {id:"MT20240803", t1:"Singapore", t2:"Philippines"}
+  ],
+  "JC2024081103":[
+    {id:"MT20241101", t1:"Thái Lan",  t2:"Indonesia"},
+    {id:"MT20241102", t1:"Malaysia",  t2:"Việt Nam"}
+  ],
+  "JC2024072905":[
+    {id:"MT20240751", t1:"Philippines", t2:"Singapore"},
+    {id:"MT20240752", t1:"Việt Nam",    t2:"Indonesia"},
+    {id:"MT20240753", t1:"Thái Lan",    t2:"Malaysia"}
+  ]
+};
+
+const odRows = Array.from({length:26},(_,i)=>{
+  const mem = OD_MEM[i % OD_MEM.length];
+  const act = OD_ACTS[i % OD_ACTS.length];
+  const pool = ACT_MATCHES[act.cfg];
+  const m = pool[i % pool.length];
+  const pickIdx = i % 3;
+  const pick = ["主胜", "平局", "客胜"][pickIdx];
+  const odds = [1.85, 3.20, 2.45][pickIdx] + (i % 5) * 0.07;
+  const stake = [2000, 5000, 1200, 8000, 3500, 600, 15000, 900][i % 8];
+  const expect = Math.round(stake * odds);
+  const status = i % 7 === 6 ? "已退还" : (i < 18 ? "已结算" : "未结算");
+  const won = status === "已结算" && i % 3 !== 1;
+  const day = 12 + (i % 6);
+  return {
+    no:`JC2408${String(190000 + i * 37).slice(0,6)}`,
+    ...mem, cfg:act.cfg, act:act.name,
+    mid:m.id, match:`${m.t1} VS ${m.t2}`,
+    pick, odds:odds.toFixed(2), stake, expect,
+    actual: status === "已结算" ? (won ? expect : 0) : (status === "已退还" ? stake : null),
+    betAt:`2024-08-${day} 14:2${i%6}:30`,
+    settleAt: status === "未结算" ? null : `2024-08-${day} 22:00:00`,
+    status, won
+  };
+});
+
+let odData = [...odRows];
+
+const OD_PILL = { "已结算":"pill-done", "未结算":"pill-wait", "已退还":"pill-back" };
+
+function renderOd(){
+  document.getElementById("odBody").innerHTML = odData.map((r,i)=>`
+    <tr>
+      <td class="num">${r.no}</td>
+      <td>${r.acc}</td><td>${r.vip}</td><td>${r.tier}</td>
+      <td class="${tagCls(r.tag)}">${r.tag}</td>
+      <td>${r.act}</td>
+      <td class="num sub">${r.mid}</td>
+      <td>${r.match}</td>
+      <td>${r.pick}</td>
+      <td><span class="odds-tag"><span class="num">${r.odds}</span><span class="snap">快照</span></span></td>
+      <td class="num">${n(r.stake)}</td>
+      <td class="num">${n(r.expect)}</td>
+      <td class="num ${r.actual ? (r.status==="已退还" ? "" : "win") : "lose"}">${r.actual == null ? "—" : n(r.actual)}</td>
+      <td class="num sub">${r.betAt}</td>
+      <td class="num sub">${r.settleAt || "—"}</td>
+      <td><span class="pill ${OD_PILL[r.status]}">${r.status}</span></td>
+      <td><span class="link" onclick="openOdDetail(${i})">详情</span></td>
+    </tr>`).join("") ||
+    `<tr><td colspan="17" style="text-align:center;color:#bfbfbf;padding:50px">暂无数据</td></tr>`;
+
+  const sum = k => odData.reduce((a,r)=>a + (r[k] || 0), 0);
+  document.getElementById("od-s1").textContent = n(sum("stake"));
+  document.getElementById("od-s2").textContent = n(sum("expect"));
+  document.getElementById("od-s3").textContent = n(sum("actual"));
+  document.getElementById("odTotal").textContent = `共 ${n(odData.length)} 条`;
+}
+
+const OD_KEY_MAP = { acc:"acc", no:"no", cfg:"cfg" };
+
+function onOdKeyType(){
+  const t = document.getElementById("odKeyType").value;
+  const label = { acc:"会员账号", no:"竞猜订单号", cfg:"配置ID" }[t];
+  const box = document.getElementById("odKeyword");
+  box.placeholder = "请输入" + label;
+  box.value = "";
+}
+
+function odSearch(){
+  const type = document.getElementById("odKeyType").value;
+  const kw   = document.getElementById("odKeyword").value.trim().toLowerCase();
+  const key  = OD_KEY_MAP[type];
+  const ac   = document.getElementById("odAct").value;
+  const mt   = document.getElementById("odMatch").value;
+  const op   = document.getElementById("odOpt").value;
+  const st   = document.getElementById("odStatus").value;
+
+  odData = odRows.filter(r=>
+    (!kw || String(r[key]).toLowerCase().includes(kw)) &&
+    (!ac || r.cfg === ac) &&
+    (!mt || r.mid === mt) &&
+    (op.startsWith("全部") || r.pick === op) &&
+    (st.startsWith("全部") || r.status === st));
+  renderOd();
+}
+
+function odReset(){
+  document.querySelectorAll("#page-detail .fld").forEach(i=>i.value="");
+  document.querySelectorAll("#page-detail .sel").forEach(s=>s.selectedIndex=0);
+  document.querySelectorAll('th.sortable[data-tbl="od"]').forEach(t=>t.classList.remove("asc","desc"));
+  onOdKeyType();
+  onOdAct();
+  odData = [...odRows];
+  renderOd();
+}
+
+function openOdDetail(i){
+  const r = odData[i];
+  document.getElementById("od-sub").textContent = `${r.no} · ${r.acc}`;
+  const rows = [
+    ["竞猜订单号", r.no], ["注单状态", `<span class="pill ${OD_PILL[r.status]}">${r.status}</span>`],
+    ["会员账号", r.acc], ["VIP / 层级", `${r.vip} / ${r.tier}`],
+    ["标签", `<span class="${tagCls(r.tag)}">${r.tag}</span>`],
+    ["配置ID", r.cfg], ["活动名称", r.act],
+    ["赛事ID", r.mid], ["赛事名称", r.match],
+    ["投注选项", `${r.pick}　<span class="sub">（${r.pick==="主胜" ? r.match.split(" VS ")[0] : r.pick==="客胜" ? r.match.split(" VS ")[1] : "双方战平"}）</span>`],
+    ["竞猜赔率", `${r.odds}　<span class="sub">（下注瞬间快照）</span>`],
+    ["投注积分", n(r.stake)], ["预计派奖", n(r.expect)],
+    ["实际派奖", r.actual == null ? "—" : n(r.actual)],
+    ["赛果", r.status==="未结算" ? "—" : (r.status==="已退还" ? "活动关闭，积分退还" : (r.won ? "命中" : "未命中"))],
+    ["下注时间", r.betAt], ["结算时间", r.settleAt || "—"]
+  ];
+  document.getElementById("odDetail").innerHTML =
+    rows.map(([k,v])=>`<div class="dt"><div class="dt-k">${k}</div><div class="dt-v">${v}</div></div>`).join("");
+  openMask("mask-od");
+}
+
+/* 筛选下拉：活动 → 赛事 两级联动 */
+function initOdFilters(){
+  document.getElementById("odAct").innerHTML =
+    '<option value="">全部活动</option>' +
+    OD_ACTS.map(a=>`<option value="${a.cfg}">${a.name}</option>`).join("");
+  onOdAct();
+  document.getElementById("odOpt").innerHTML =
+    '<option>全部投注选项</option><option>主胜</option><option>平局</option><option>客胜</option>';
+}
+
+function onOdAct(){
+  const cfg = document.getElementById("odAct").value;
+  const mt  = document.getElementById("odMatch");
+
+  if(!cfg){
+    mt.innerHTML = '<option value="">全部赛事</option>';
+    mt.disabled = true;
+    mt.title = "请先选择活动";
+    return;
+  }
+  mt.disabled = false;
+  mt.title = "";
+  mt.innerHTML = '<option value="">全部赛事</option>' +
+    (ACT_MATCHES[cfg] || []).map(m=>
+      `<option value="${m.id}">${m.t1} VS ${m.t2}</option>`).join("");
+}
+initOdFilters();
+renderOd();
+
+
+/* ===================== 竞猜统计 ===================== */
+const ST_ACTS = [
+  {cfg:"JC2024081901", name:"国际冠军杯冠军竞猜", pool:50000},
+  {cfg:"JC2024081103", name:"东南亚邀请赛首球时间", pool:100000},
+  {cfg:"JC2024072905", name:"世界杯预选赛竞猜", pool:80000},
+  {cfg:"JC2024081802", name:"夏季联赛全场比分", pool:30000},
+  {cfg:"JC2024071206", name:"季前热身赛竞猜", pool:15000}
+];
+
+const stRows = [];
+ST_ACTS.forEach((a,ai)=>{
+  for(let d=0; d<4; d++){
+    const got   = 2400 - ai*280 - d*170;
+    const join  = Math.round(got * (0.42 + ai*0.09 - d*0.03));
+    const bets  = join * (6 + ai);
+    const stake = bets * (1200 + ai*260);
+    const win   = Math.round(stake * (0.94 + ai*0.02));
+    const share = Math.round(join * 0.86);
+    const amount = a.pool / 4;
+    stRows.push({
+      date:`2024-08-${String(15+d).padStart(2,"0")}`,
+      cfg:a.cfg, name:a.name,
+      got, join, bets, stake, win, share, amount
+    });
+  }
+});
+
+let stData = [...stRows];
+
+function rateTag(v){
+  const pct = (v*100).toFixed(1);
+  const cls = v >= 0.5 ? "" : v >= 0.3 ? "low" : "bad";
+  return `<span class="rate ${cls}"><span class="bar"><i style="width:${Math.min(100,v*100)}%"></i></span>${pct}%</span>`;
+}
+
+function renderSt(){
+  document.getElementById("stBody").innerHTML = stData.map((r,i)=>`
+    <tr>
+      <td class="num">${r.date}</td>
+      <td class="num sub">${r.cfg}</td>
+      <td>${r.name}</td>
+      <td class="num">${n(r.got)}</td>
+      <td class="num">${n(r.join)}</td>
+      <td>${rateTag(r.join / r.got)}</td>
+      <td class="num">${n(r.bets)}</td>
+      <td class="num">${n(r.stake)}</td>
+      <td class="num">${n(r.win)}</td>
+      <td class="num">${n(r.share)}</td>
+      <td class="num">${n2(r.amount)}</td>
+      <td class="num">${n2(r.amount / r.share)}</td>
+      <td><span class="link" onclick="openStDetail('${r.cfg}')">详情</span></td>
+    </tr>`).join("") ||
+    `<tr><td colspan="13" style="text-align:center;color:#bfbfbf;padding:50px">暂无数据</td></tr>`;
+
+  const sum = k => stData.reduce((a,r)=>a + r[k], 0);
+  [["st-got","got"],["st-join","join"],["st-bets","bets"],
+   ["st-stake","stake"],["st-win","win"],["st-share","share"]]
+    .forEach(([id,k])=>document.getElementById(id).textContent = n(sum(k)));
+  document.getElementById("st-amt").textContent = n2(sum("amount"));
+  document.getElementById("stTotal").textContent = `共 ${n(stData.length)} 条`;
+}
+
+function stSearch(){
+  const nm  = document.getElementById("stName").value.trim().toLowerCase();
+  const cfg = document.getElementById("stCfg").value.trim().toLowerCase();
+  const min = parseInt(document.getElementById("stMin").value) || 0;
+  stData = stRows.filter(r=>
+    (!nm  || r.name.toLowerCase().includes(nm)) &&
+    (!cfg || r.cfg.toLowerCase().includes(cfg)) &&
+    r.got >= min);
+  renderSt();
+}
+
+function stReset(){
+  document.querySelectorAll("#page-stat .fld").forEach(i=>i.value="");
+  document.querySelectorAll('th.sortable[data-tbl="st"]').forEach(t=>t.classList.remove("asc","desc"));
+  stData = [...stRows];
+  renderSt();
+}
+
+function openStDetail(cfg){
+  const list = stRows.filter(r=>r.cfg === cfg);
+  const a = list[0];
+  document.getElementById("st-sub").textContent = `${cfg} · ${a.name}`;
+
+  const t = k => list.reduce((s,r)=>s + r[k], 0);
+  document.getElementById("stCards").innerHTML = `
+    <div><span>获取积分人数</span><b>${n(t("got"))}</b></div>
+    <div><span>参与人数</span><b>${n(t("join"))}</b></div>
+    <div><span>参与率</span><b>${(t("join")/t("got")*100).toFixed(1)}%</b></div>
+    <div><span>投注总数</span><b>${n(t("bets"))}</b></div>
+    <div><span>瓜分人数</span><b>${n(t("share"))}</b></div>
+    <div><span>瓜分金额</span><b>${n2(t("amount"))}</b></div>`;
+
+  document.getElementById("stTrend").innerHTML = list.map(r=>`
+    <tr>
+      <td>${r.date}</td><td>${n(r.got)}</td><td>${n(r.join)}</td>
+      <td>${n(r.bets)}</td><td>${n(r.stake)}</td>
+      <td>${n(r.share)}</td><td>${n2(r.amount)}</td>
+    </tr>`).join("");
+
+  openMask("mask-st");
+}
+
+renderSt();
+
+/* ===================== 通用 ===================== */
+/* 弹窗层级：按当前已打开的数量自动叠加 */
+const MASK_STACK = [];
+function openMask(id){
+  const el = document.getElementById(id);
+  if(el.classList.contains("show")) return;
+  el.classList.remove("lv2","lv3");
+  const depth = MASK_STACK.length;
+  if(depth === 1) el.classList.add("lv2");
+  else if(depth >= 2) el.classList.add("lv3");
+  MASK_STACK.push(id);
+  el.classList.add("show");
+}
+function closeMask(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove("show","lv2","lv3");
+  const i = MASK_STACK.lastIndexOf(id);
+  if(i > -1) MASK_STACK.splice(i,1);
+}
+function topMask(){ return MASK_STACK[MASK_STACK.length-1]; }
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape"){
+    const t = topMask();
+    if(t) closeMask(t);
+  }
+});
+
+/* 排序 */
+let sortKey=null, sortAsc=true;
+document.querySelectorAll("th.sortable").forEach(th=>{
+  th.addEventListener("click", ()=>{
+    const key=th.dataset.key, type=th.dataset.type, tbl=th.dataset.tbl;
+    sortAsc = (sortKey===tbl+key) ? !sortAsc : true;
+    sortKey = tbl+key;
+    document.querySelectorAll(`th.sortable[data-tbl="${tbl}"]`).forEach(t=>t.classList.remove("asc","desc"));
+    th.classList.add(sortAsc?"asc":"desc");
+    const arr = tbl==="cfg" ? cfgData : tbl==="od" ? odData : tbl==="st" ? stData : data;
+    const val = (o,k) => k==="net" ? o.win - o.stake : o[k];
+    arr.sort((a,b)=>{
+      const r = type==="num" ? val(a,key)-val(b,key)
+                             : String(a[key]).localeCompare(String(b[key]),"zh-CN");
+      return sortAsc ? r : -r;
+    });
+    tbl==="cfg" ? renderCfg() : tbl==="od" ? renderOd() : tbl==="st" ? renderSt() : render();
+  });
+});
+
+/* 导航 */
+document.querySelectorAll(".nav-item").forEach(item=>{
+  item.addEventListener("click", ()=>{
+    document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("active"));
+    item.classList.add("active");
+    const p = item.dataset.page;
+    document.getElementById("page-config").style.display = p==="config" ? "" : "none";
+    document.getElementById("page-detail").style.display = p==="detail" ? "" : "none";
+    document.getElementById("page-member").style.display = p==="member" ? "" : "none";
+    document.getElementById("page-stat").style.display   = p==="stat" ? "" : "none";
+  });
+});
+
+renderCfg();
+render();
+</script>
+</body>
+</html>
