@@ -32,9 +32,9 @@
              border-bottom:2px solid transparent; white-space:nowrap; transition:color .15s; }
   .nav-item:hover{ color:var(--blue); }
   .nav-item.active{ color:var(--blue); font-weight:500; border-bottom-color:var(--blue); }
-  .topbar-right{ margin-left:auto; display:flex; align-items:center; gap:11px; flex-shrink:0; }
-  .topbar-right .master-label{ font-weight:500; white-space:nowrap; }
-  .topbar-right .master-hint{ font-size:12px; color:var(--text-2); white-space:nowrap; }
+  .master{ display:flex; align-items:center; gap:10px; }
+  .master-label{ font-weight:500; white-space:nowrap; }
+  .master-hint{ font-size:12px; color:var(--text-2); white-space:nowrap; }
 
   /* ---------- 页头操作区 ---------- */
   .page-head{ display:flex; align-items:center; gap:14px; padding:18px 24px 0; flex-wrap:wrap; }
@@ -608,17 +608,17 @@
     <div class="nav-item" data-page="member">竞猜会员</div>
     <div class="nav-item" data-page="stat">竞猜统计</div>
   </nav>
-  <div class="topbar-right">
-    <span class="master-hint" id="masterHint">关闭后前端入口隐藏，已投注单不受影响</span>
-    <span class="master-label">竞猜总开关</span>
-    <label class="switch gsw"><input type="checkbox" id="masterSwitch" checked><span class="slider"></span></label>
-  </div>
 </div>
 
 <!-- ================= 竞猜配置列表 ================= -->
 <section id="page-config">
   <div class="page-head">
     <button class="btn btn-primary" onclick="openEditor('create')">添加活动</button>
+    <div class="master">
+      <span class="master-label">竞猜总开关</span>
+      <label class="switch gsw"><input type="checkbox" id="masterSwitch" checked><span class="slider"></span></label>
+      <span class="master-hint" id="masterHint">关闭后前端入口隐藏，已投注单不受影响</span>
+    </div>
   </div>
 
   <div class="filters">
@@ -665,7 +665,7 @@
     </table>
 
     <div class="pager">
-      <span class="pager-total">共 42 条</span>
+      <span class="pager-total" id="cfgTotal">共 10 条</span>
       <button class="pg">‹</button><button class="pg active">1</button>
       <button class="pg">2</button><button class="pg">3</button><button class="pg">›</button>
     </div>
@@ -683,7 +683,7 @@
     <select class="sel w150" id="mbVip"><option>全部VIP等级</option><option>VIP 1-10</option><option>VIP 11-30</option><option>VIP 31-50</option><option>SVIP</option></select>
     <select class="sel w150" id="mbTier"><option>全部层级</option><option>层级1</option><option>层级2</option><option>层级3</option><option>层级4</option></select>
     <select class="sel w150" id="mbTag"><option>全部标签</option><option>标签1</option><option>高价值</option><option>风险关注</option></select>
-    <select class="sel w180" id="mbAct"><option>全部活动</option><option>国际冠军杯冠军竞猜</option><option>夏季联赛全场比分</option><option>东南亚邀请赛首球时间</option></select>
+    <select class="sel w180" id="mbAct"><option>全部活动</option><option>国际冠军杯竞猜</option><option>夏季联赛竞猜</option><option>东南亚邀请赛竞猜</option></select>
     <button class="btn btn-primary" onclick="search()">搜索</button>
     <button class="btn" onclick="reset()">重置</button>
     <div class="spacer"></div>
@@ -1654,48 +1654,73 @@ let edLocked = false;   // 编辑弹窗：已发布活动的时间字段锁定�
 
 /* ===================== 数据 ===================== */
 const cfgRows = [
-  {id:"JC2024081907", name:"中超联赛胜平负竞猜", src:"每日赠送", cond:"无条件", condVal:0, tier:"层级1", vip:"VIP2",
-   teamCount:3, matches:0, pool:0, start:"—", end:"—", show:"—",
+  /* 01 草稿 · 必填项未完成，不可发布 */
+  {id:"JC2024081910", name:"草稿未完成活动", src:"每日赠送", cond:"无条件", condVal:0, tier:"层级1", vip:"VIP2",
+   lockMode:null, teamCount:4, matches:0, pool:0, start:"—", end:"—", show:"—",
    status:"草稿", active:false, ct:"2024-08-19 10:26:18", ut:"2024-08-19 10:26:18", by:"admin_zhang"},
-  {id:"JC2024081806", name:"亚冠淘汰赛正确比分", src:"充值比例", cond:"累计充值", condVal:500, tier:"层级1", vip:"VIP2",
-   teamCount:4, matches:4, pool:25000, start:"2024-09-05 00:00", end:"2024-09-28 23:59", show:"2024-09-02 00:00 ～ 2024-09-30 23:59",
+
+  /* 02 草稿 · 必填项已完成，可发布并启用 */
+  {id:"JC2024081909", name:"草稿可发布活动", src:"充值比例", cond:"累计充值", condVal:500, tier:"层级1", vip:"VIP2",
+   lockMode:null, teamCount:4, matches:4, pool:25000, start:"2024-09-05 00:00", end:"2024-09-28 23:59", show:"2024-09-02 00:00 ～ 2024-09-30 23:59",
    status:"草稿", active:false, ct:"2024-08-18 15:44:03", ut:"2024-08-19 09:12:37", by:"admin_li"},
-  {id:"JC2024081901", name:"国际冠军杯冠军竞猜", src:"每日赠送", cond:"无条件", condVal:0, tier:"层级1", vip:"VIP2",
-   teamCount:6, matches:12, pool:50000, start:"2024-08-15 00:00", end:"2024-09-10 23:59", show:"2024-08-12 00:00 ～ 2024-09-15 23:59",
-   status:"进行中", active:true, ct:"2024-08-10 11:02:31", ut:"2024-08-18 09:41:05", by:"admin_zhang"},
-  {id:"JC2024081802", name:"夏季联赛全场比分", src:"充值比例", cond:"累计充值", condVal:1000, tier:"层级2", vip:"VIP5",
-   teamCount:5, matches:8, pool:30000, start:"2024-08-20 00:00", end:"2024-09-20 23:59", show:"2024-08-18 00:00 ～ 2024-09-22 23:59",
-   status:"未开始", active:true, ct:"2024-08-08 16:20:44", ut:"2024-08-17 14:08:19", by:"admin_li"},
-  {id:"JC2024081103", name:"东南亚邀请赛首球时间", src:"消费比例", cond:"累计打码", condVal:5000, tier:"层级2", vip:"VIP10",
-   teamCount:8, matches:20, pool:100000, start:"2024-07-01 00:00", end:"2024-07-31 23:59", show:"2024-06-28 00:00 ～ 2024-08-03 23:59",
-   status:"已结算", active:false, ct:"2024-06-25 10:15:02", ut:"2024-08-02 03:00:00", by:"system"},
-  {id:"JC2024080704", name:"欧冠小组赛总进球", src:"充值比例", cond:"累计充值", condVal:200, tier:"不限", vip:"不限",
-   teamCount:2, matches:0, pool:20000, start:"2024-09-01 00:00", end:"2024-09-30 23:59", show:"2024-08-28 00:00 ～ 2024-10-02 23:59",
+
+  /* 03 未开始 · 已启用 · 双数队伍未锁赛制 */
+  {id:"JC2024081908", name:"亚冠淘汰赛竞猜", src:"充值比例", cond:"累计充值", condVal:1000, tier:"层级2", vip:"VIP5",
+   lockMode:null, teamCount:4, matches:4, pool:30000, start:"2024-09-05 00:00", end:"2024-09-28 23:59", show:"2024-09-02 00:00 ～ 2024-09-30 23:59",
+   status:"未开始", active:true, ct:"2024-08-18 16:20:44", ut:"2024-08-18 16:20:44", by:"admin_li"},
+
+  /* 04 未开始 · 未启用 · 赛事数为 0，不可启用 */
+  {id:"JC2024080704", name:"欧冠小组赛竞猜", src:"充值比例", cond:"累计充值", condVal:200, tier:"不限", vip:"不限",
+   lockMode:null, teamCount:2, matches:0, pool:20000, start:"2024-09-01 00:00", end:"2024-09-30 23:59", show:"2024-08-28 00:00 ～ 2024-10-02 23:59",
    status:"未开始", active:false, ct:"2024-08-07 09:33:10", ut:"2024-08-07 09:33:10", by:"admin_wang"},
+
+  /* 05 未开始 · 单数队伍，仅可配联赛 */
+  {id:"JC2024081802", name:"夏季联赛竞猜", src:"充值比例", cond:"累计充值", condVal:1000, tier:"层级2", vip:"VIP5",
+   lockMode:null, teamCount:5, matches:8, pool:30000, start:"2024-08-20 00:00", end:"2024-09-20 23:59", show:"2024-08-18 00:00 ～ 2024-09-22 23:59",
+   status:"未开始", active:true, ct:"2024-08-08 16:20:44", ut:"2024-08-17 14:08:19", by:"admin_li"},
+
+  /* 06 进行中 · 已启用 · 已锁联赛 */
+  {id:"JC2024081901", name:"国际冠军杯竞猜", src:"每日赠送", cond:"无条件", condVal:0, tier:"层级1", vip:"VIP2",
+   lockMode:"league", teamCount:6, matches:12, pool:50000, start:"2024-08-15 00:00", end:"2024-09-10 23:59", show:"2024-08-12 00:00 ～ 2024-09-15 23:59",
+   status:"进行中", active:true, ct:"2024-08-10 11:02:31", ut:"2024-08-18 09:41:05", by:"admin_zhang"},
+
+  /* 07 进行中 · 已停用 · 前端入口隐藏 */
+  {id:"JC2024081602", name:"中超联赛竞猜", src:"消费比例", cond:"累计打码", condVal:3000, tier:"层级2", vip:"VIP5",
+   lockMode:"league", teamCount:6, matches:10, pool:40000, start:"2024-08-16 00:00", end:"2024-09-05 23:59", show:"2024-08-14 00:00 ～ 2024-09-08 23:59",
+   status:"进行中", active:false, ct:"2024-08-14 10:05:22", ut:"2024-08-18 15:30:11", by:"admin_wang"},
+
+  /* 08 已截止 · 已锁杯赛 · 待结算 */
   {id:"JC2024072905", name:"世界杯预选赛竞猜", src:"每日赠送", cond:"无条件", condVal:0, tier:"层级1", vip:"VIP2",
-   teamCount:7, matches:15, pool:80000, start:"2024-08-01 00:00", end:"2024-08-18 23:59", show:"2024-07-29 00:00 ～ 2024-08-20 23:59",
+   lockMode:"cup", teamCount:8, matches:15, pool:80000, start:"2024-08-01 00:00", end:"2024-08-18 23:59", show:"2024-07-29 00:00 ～ 2024-08-20 23:59",
    status:"已截止", active:true, ct:"2024-07-29 14:50:27", ut:"2024-08-19 00:12:44", by:"admin_zhang"},
+
+  /* 09 已结算 · 正常走完全流程 */
+  {id:"JC2024081103", name:"东南亚邀请赛竞猜", src:"消费比例", cond:"累计打码", condVal:5000, tier:"层级2", vip:"VIP10",
+   lockMode:"league", teamCount:8, matches:20, pool:100000, start:"2024-07-01 00:00", end:"2024-07-31 23:59", show:"2024-06-28 00:00 ～ 2024-08-03 23:59",
+   status:"已结算", active:false, ct:"2024-06-25 10:15:02", ut:"2024-08-02 03:00:00", by:"system"},
+
+  /* 10 已关闭 · 运营主动终止 */
   {id:"JC2024071206", name:"季前热身赛竞猜", src:"消费比例", cond:"累计打码", condVal:2000, tier:"层级3", vip:"VIP15",
-   teamCount:4, matches:6, pool:15000, start:"2024-07-15 00:00", end:"2024-07-25 23:59", show:"2024-07-12 00:00 ～ 2024-07-27 23:59",
+   lockMode:"league", teamCount:4, matches:6, pool:15000, start:"2024-07-15 00:00", end:"2024-07-25 23:59", show:"2024-07-12 00:00 ～ 2024-07-27 23:59",
    status:"已关闭", active:false, ct:"2024-07-12 08:41:56", ut:"2024-07-22 17:30:08", by:"admin_li"}
 ];
 
 const rows = [
-  {uid:16425983, account:"bettor999",  vip:"VIP 43", tier:"层级2", tag:"标签1",   bets:342, stake:398200, win:435910, prize:37710.00, earn:96800,  act:"国际冠军杯冠军竞猜"},
-  {uid:18264932, account:"gambler890", vip:"VIP 5",  tier:"层级1", tag:"高价值", bets:61,  stake:42800,  win:39760,  prize:3040.00,  earn:16520,  act:"国际冠军杯冠军竞猜"},
-  {uid:21976453, account:"casino567",  vip:"VIP 34", tier:"层级2", tag:"标签1",   bets:84,  stake:76500,  win:68120,  prize:8380.00,  earn:28300,  act:"夏季联赛全场比分"},
-  {uid:27239945, account:"user7890",   vip:"VIP 2",  tier:"层级1", tag:"高价值", bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"东南亚邀请赛首球时间"},
-  {uid:27419536, account:"winner456",  vip:"VIP 31", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"国际冠军杯冠军竞猜"},
-  {uid:27952467, account:"risk5678",   vip:"VIP 14", tier:"层级2", tag:"标签1",   bets:84,  stake:76500,  win:68120,  prize:8380.00,  earn:28300,  act:"夏季联赛全场比分"},
-  {uid:28543972, account:"luck123",    vip:"VIP 23", tier:"层级2", tag:"标签1",   bets:342, stake:398200, win:435910, prize:37710.00, earn:96800,  act:"国际冠军杯冠军竞猜"},
-  {uid:28943617, account:"prize456",   vip:"VIP 41", tier:"层级4", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"国际冠军杯冠军竞猜"},
-  {uid:34529861, account:"profit901",  vip:"VIP 17", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"东南亚邀请赛首球时间"},
-  {uid:36295874, account:"luck777",    vip:"SVIP 9", tier:"层级2", tag:"标签1",   bets:342, stake:398200, win:435910, prize:37710.00, earn:96800,  act:"国际冠军杯冠军竞猜"},
-  {uid:36591487, account:"spin777",    vip:"VIP 26", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"国际冠军杯冠军竞猜"},
-  {uid:39472681, account:"money345",   vip:"VIP 50", tier:"层级2", tag:"标签1",   bets:61,  stake:42800,  win:39760,  prize:3040.00,  earn:16520,  act:"国际冠军杯冠军竞猜"},
-  {uid:39521784, account:"spin234",    vip:"VIP 44", tier:"层级2", tag:"标签1",   bets:84,  stake:76500,  win:68120,  prize:8380.00,  earn:28300,  act:"夏季联赛全场比分"},
-  {uid:45793264, account:"fortune678", vip:"VIP 10", tier:"层级2", tag:"风险关注", bets:61, stake:42800, win:39760,  prize:3040.00,  earn:16520,  act:"国际冠军杯冠军竞猜"},
-  {uid:47289613, account:"bettor456",  vip:"VIP 27", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"东南亚邀请赛首球时间"}
+  {uid:16425983, account:"bettor999",  vip:"VIP 43", tier:"层级2", tag:"标签1",   bets:342, stake:398200, win:435910, prize:37710.00, earn:96800,  act:"国际冠军杯竞猜"},
+  {uid:18264932, account:"gambler890", vip:"VIP 5",  tier:"层级1", tag:"高价值", bets:61,  stake:42800,  win:39760,  prize:3040.00,  earn:16520,  act:"国际冠军杯竞猜"},
+  {uid:21976453, account:"casino567",  vip:"VIP 34", tier:"层级2", tag:"标签1",   bets:84,  stake:76500,  win:68120,  prize:8380.00,  earn:28300,  act:"夏季联赛竞猜"},
+  {uid:27239945, account:"user7890",   vip:"VIP 2",  tier:"层级1", tag:"高价值", bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"东南亚邀请赛竞猜"},
+  {uid:27419536, account:"winner456",  vip:"VIP 31", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"国际冠军杯竞猜"},
+  {uid:27952467, account:"risk5678",   vip:"VIP 14", tier:"层级2", tag:"标签1",   bets:84,  stake:76500,  win:68120,  prize:8380.00,  earn:28300,  act:"夏季联赛竞猜"},
+  {uid:28543972, account:"luck123",    vip:"VIP 23", tier:"层级2", tag:"标签1",   bets:342, stake:398200, win:435910, prize:37710.00, earn:96800,  act:"国际冠军杯竞猜"},
+  {uid:28943617, account:"prize456",   vip:"VIP 41", tier:"层级4", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"国际冠军杯竞猜"},
+  {uid:34529861, account:"profit901",  vip:"VIP 17", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"东南亚邀请赛竞猜"},
+  {uid:36295874, account:"luck777",    vip:"SVIP 9", tier:"层级2", tag:"标签1",   bets:342, stake:398200, win:435910, prize:37710.00, earn:96800,  act:"国际冠军杯竞猜"},
+  {uid:36591487, account:"spin777",    vip:"VIP 26", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"国际冠军杯竞猜"},
+  {uid:39472681, account:"money345",   vip:"VIP 50", tier:"层级2", tag:"标签1",   bets:61,  stake:42800,  win:39760,  prize:3040.00,  earn:16520,  act:"国际冠军杯竞猜"},
+  {uid:39521784, account:"spin234",    vip:"VIP 44", tier:"层级2", tag:"标签1",   bets:84,  stake:76500,  win:68120,  prize:8380.00,  earn:28300,  act:"夏季联赛竞猜"},
+  {uid:45793264, account:"fortune678", vip:"VIP 10", tier:"层级2", tag:"风险关注", bets:61, stake:42800, win:39760,  prize:3040.00,  earn:16520,  act:"国际冠军杯竞猜"},
+  {uid:47289613, account:"bettor456",  vip:"VIP 27", tier:"层级2", tag:"标签1",   bets:286, stake:482600, win:516280, prize:33680.00, earn:128450, act:"东南亚邀请赛竞猜"}
 ];
 
 const n  = v => v.toLocaleString("en-US");
@@ -1720,6 +1745,8 @@ const condText = r => {
 };
 
 function renderCfg(){
+  const tot = document.getElementById("cfgTotal");
+  if(tot) tot.textContent = `共 ${cfgData.length} 条`;
   document.getElementById("cfgBody").innerHTML = cfgData.map((r,i)=>{
     const canOpen = r.matches > 0;
     const draft   = r.status === "草稿";
@@ -2032,34 +2059,78 @@ function openMatches(id){
   const n = Math.min(rdCur.matches || 0, 6);
   rdLeague = [{ name: rdCur.name, rows: n ? mkRdRows(n) : [] }];
   rdCup    = [{ name: "决赛", rows: n ? mkRdRows(Math.min(n,2)) : [] }];
-  rdMode = "league";
+  // 已锁定赛制则进入锁定的那一种，否则默认联赛
+  rdMode = rdCur.lockMode || "league";
   document.getElementById("mt-sub").textContent =
     `${rdCur.id} · ${rdCur.name}　|　队伍数量：${rdCur.teamCount}`;
   document.getElementById("rdFilterDraw").value = "";
   document.getElementById("rdFilterPub").value = "";
 
-  // 队伍为单数时锁定杯赛配置
-  const odd = rdCur.teamCount % 2 !== 0;
-  const tabs = document.querySelectorAll("#rdMode div");
-  tabs.forEach((d,i)=>{
-    d.classList.toggle("on", i===0);
-    if(i===1){
-      d.classList.toggle("disabled", odd);
-      d.title = odd ? "队伍数量为单数，无法两两配对，不可配置杯赛" : "";
-    }
-  });
-  const tip = document.getElementById("rdOddTip");
-  tip.style.display = odd ? "" : "none";
-  if(odd) document.getElementById("rdOddTxt").innerHTML =
-    `当前活动配置了 <strong>${rdCur.teamCount}</strong> 支队伍，为单数，无法两两配对，因此<strong>仅可配置联赛</strong>。如需配置杯赛，请先将队伍数量调整为双数。`;
-
+  refreshModeTabs();
   applyMode();
   openMask("mask-matches");
+}
+
+/* 赛制 Tab 可用性：单数队伍禁杯赛；已配置过则锁定另一种 */
+function refreshModeTabs(){
+  const odd  = rdCur.teamCount % 2 !== 0;
+  const lock = rdCur.lockMode;
+  const tabs = document.querySelectorAll("#rdMode div");
+
+  tabs.forEach((d,i)=>{
+    const m = i === 0 ? "league" : "cup";
+    d.classList.toggle("on", m === rdMode);
+
+    let dis = false, why = "";
+    if(lock && m !== lock){
+      dis = true;
+      why = `该活动已配置${lock === "league" ? "联赛" : "杯赛"}，不可再配置${m === "league" ? "联赛" : "杯赛"}`;
+    }else if(m === "cup" && odd){
+      dis = true;
+      why = "队伍数量为单数，无法两两配对，不可配置杯赛";
+    }
+    d.classList.toggle("disabled", dis);
+    d.title = why;
+  });
+
+  const tip = document.getElementById("rdOddTip");
+  const txt = document.getElementById("rdOddTxt");
+
+  if(lock){
+    tip.style.display = "";
+    txt.innerHTML = `该活动已配置<strong>${lock === "league" ? "联赛" : "杯赛"}</strong>赛制。` +
+      `两种赛制互斥，一经配置不可切换；如需更换，请关闭本活动后重新创建。`;
+  }else if(odd){
+    tip.style.display = "";
+    txt.innerHTML = `当前活动配置了 <strong>${rdCur.teamCount}</strong> 支队伍，为单数，` +
+      `无法两两配对，因此<strong>仅可配置联赛</strong>。如需配置杯赛，请先将队伍数量调整为双数。`;
+  }else{
+    tip.style.display = "";
+    txt.innerHTML = `尚未配置赛制。<strong>联赛与杯赛互斥</strong>，` +
+      `保存或发布赛事后将锁定为所选赛制，之后不可切换。`;
+  }
 }
 
 /* 赛制切换 */
 function rdSetMode(m){
   if(rdMode === m) return;
+  const name = m === "league" ? "联赛" : "杯赛";
+
+  // 已锁定另一种赛制
+  if(rdCur && rdCur.lockMode && rdCur.lockMode !== m){
+    const cur = rdCur.lockMode === "league" ? "联赛" : "杯赛";
+    confirm2({
+      title:`无法配置${name}`, icon:ICON_WARN,
+      lead:`该活动已配置${cur}赛制`,
+      desc:`联赛与杯赛<strong>互斥</strong>，一个活动只能配置其中一种，一经配置不可切换。<br>` +
+           `如需改为${name}，请关闭本活动后重新创建。`,
+      kv:[["活动", rdCur.name],["当前赛制", cur]],
+      okText:"知道了"
+    });
+    return;
+  }
+
+  // 单数队伍禁杯赛
   if(m === "cup" && rdCur && rdCur.teamCount % 2 !== 0){
     confirm2({
       title:"无法配置杯赛", icon:ICON_WARN,
@@ -2070,10 +2141,18 @@ function rdSetMode(m){
     });
     return;
   }
+
   rdMode = m;
-  document.querySelectorAll("#rdMode div").forEach(d=>
-    d.classList.toggle("on", d.textContent.trim() === (m==="league" ? "联赛配置" : "杯赛配置")));
+  refreshModeTabs();
   applyMode();
+}
+
+/* 首次保存或发布时锁定赛制 */
+function lockRdMode(){
+  if(!rdCur || rdCur.lockMode) return false;
+  rdCur.lockMode = rdMode;
+  refreshModeTabs();
+  return true;
 }
 
 function applyMode(){
@@ -2270,8 +2349,11 @@ function saveRdRow(){
 }
 
 function rdSave(){
-  confirm2({ title:"保存", icon:ICON_INFO, lead:"已保存当前轮次的赛事配置",
-    desc:"保存仅写入后台，<strong>客户端尚未生效</strong>。需点击「发布更新」后前端才会展示。",
+  const first = lockRdMode();
+  const name  = rdMode === "league" ? "联赛" : "杯赛";
+  confirm2({ title:"保存", icon:ICON_INFO, lead:"已保存当前赛事配置",
+    desc:"保存仅写入后台，<strong>客户端尚未生效</strong>。需点击「发布更新」后前端才会展示。" +
+         (first ? `<br>本活动赛制已锁定为<strong>${name}</strong>，不可再切换。` : ""),
     okText:"知道了" });
 }
 
@@ -2287,7 +2369,11 @@ function rdPublish(){
     kv:[["待发布场次", pending + " 场"],["将触发结算", settle + " 场"],
         [rdMode==="cup" ? "轮次" : "联赛", rdRounds[rdIdx].name || "未命名"]],
     okText:"确认发布",
-    onOk:()=>{ rows.forEach(r=>{ r.pub = "已发布"; if(r.win) r.draw = "已开奖"; }); renderRd(); }
+    onOk:()=>{
+      lockRdMode();
+      rows.forEach(r=>{ r.pub = "已发布"; if(r.win) r.draw = "已开奖"; });
+      renderRd();
+    }
   });
 }
 
@@ -2764,8 +2850,8 @@ function openSource(uid){
 
 /* ===================== 竞猜明细 ===================== */
 const OD_ACTS = [
-  {cfg:"JC2024081901", name:"国际冠军杯冠军竞猜"},
-  {cfg:"JC2024081103", name:"东南亚邀请赛首球时间"},
+  {cfg:"JC2024081901", name:"国际冠军杯竞猜"},
+  {cfg:"JC2024081103", name:"东南亚邀请赛竞猜"},
   {cfg:"JC2024072905", name:"世界杯预选赛竞猜"}
 ];
 const OD_MEM = [
@@ -2945,10 +3031,10 @@ renderOd();
 
 /* ===================== 竞猜统计 ===================== */
 const ST_ACTS = [
-  {cfg:"JC2024081901", name:"国际冠军杯冠军竞猜", pool:50000},
-  {cfg:"JC2024081103", name:"东南亚邀请赛首球时间", pool:100000},
+  {cfg:"JC2024081901", name:"国际冠军杯竞猜", pool:50000},
+  {cfg:"JC2024081103", name:"东南亚邀请赛竞猜", pool:100000},
   {cfg:"JC2024072905", name:"世界杯预选赛竞猜", pool:80000},
-  {cfg:"JC2024081802", name:"夏季联赛全场比分", pool:30000},
+  {cfg:"JC2024081802", name:"夏季联赛竞猜", pool:30000},
   {cfg:"JC2024071206", name:"季前热身赛竞猜", pool:15000}
 ];
 
