@@ -310,7 +310,121 @@
   
 
 
-  /* ---------- 场馆三级选择器 ---------- */
+  
+/* ---------- 赔率类型 ---------- */
+const ODDS_TYPES = {
+  eu: { name:"欧洲盘", full:"欧洲盘（Decimal）", min:1.01, max:50.00, step:"0.01",
+        ranges:[[1.01, 50.00]], dec:2,
+        desc:"含本金。派奖 = 投注积分 × 赔率。",
+        ph:"1.01 ~ 50.00" },
+  hk: { name:"香港盘", full:"香港盘（HK）", min:0.01, max:49.00, step:"0.01",
+        ranges:[[0.01, 49.00]], dec:2,
+        desc:"不含本金。派奖 = 投注积分 ×（赔率 + 1）。",
+        ph:"0.01 ~ 49.00" },
+  my: { name:"马来盘", full:"马来盘（Malay）", min:-1.00, max:1.00, step:"0.01",
+        ranges:[[-1.00, -0.01], [0.01, 1.00]], dec:2,
+        desc:"正值不含本金；负值为让步盘，不可为 0。",
+        ph:"-1.00 ~ 1.00（不含 0）" },
+  id: { name:"印尼盘", full:"印尼盘（Indo）", min:-100, max:100, step:"0.01",
+        ranges:[[-100, -1.00], [1.00, 100]], dec:2,
+        desc:"绝对值须 ≥ 1.00，不可落在 -1.00 ~ 1.00 之间。",
+        ph:"±1.00 ~ ±100.00" },
+  us: { name:"美式盘", full:"美式盘（American）", min:-10000, max:10000, step:"1",
+        ranges:[[-10000, -100], [100, 10000]], dec:0,
+        desc:"绝对值须 ≥ 100，不可落在 -100 ~ 100 之间。",
+        ph:"±100 ~ ±10000" }
+};
+
+let curOddsType = "eu";
+
+function oddsRangeText(t){
+  const c = ODDS_TYPES[t];
+  return c.ranges.map(([a,b])=>`${a.toFixed(c.dec)} ~ ${b.toFixed(c.dec)}`).join(" 或 ");
+}
+
+function oddsValid(t, v){
+  if(isNaN(v)) return false;
+  return ODDS_TYPES[t].ranges.some(([a,b])=>v >= a && v <= b);
+}
+
+function onMfOddsType(){
+  const t = document.getElementById("mfOddsType").value;
+  const c = ODDS_TYPES[t];
+  ["mfO1","mfOD","mfO2"].forEach(k=>{
+    const el = document.getElementById(k);
+    el.placeholder = c.ph;
+    el.removeAttribute("min"); el.removeAttribute("max");
+  });
+  document.getElementById("mfTypeHint").innerHTML =
+    `常规区间 <strong>${oddsRangeText(t)}</strong>。${c.desc}`;
+  checkOdds();
+}
+
+
+/* ---------- 赔率合理性检查（仅提示，不阻断） ---------- */
+
+/* 各盘口统一换算为欧洲盘（含本金），用于计算隐含概率 */
+function toDecimal(t, v){
+  if(isNaN(v)) return NaN;
+  switch(t){
+    case "eu": return v;
+    case "hk": return v + 1;
+    case "my": return v > 0 ? v + 1 : (1 / -v) + 1;
+    case "id": return v > 0 ? v + 1 : (1 / -v) + 1;
+    case "us": return v > 0 ? v / 100 + 1 : 100 / -v + 1;
+    default:   return v;
+  }
+}
+
+function checkOdds(){
+  const box = document.getElementById("mfOddsWarn");
+  const t   = document.getElementById("mfOddsType").value || "eu";
+  const c   = ODDS_TYPES[t];
+  const vals = ["mfO1","mfOD","mfO2"].map(k=>parseFloat(document.getElementById(k).value));
+  const caps = ["主队胜","平局","主队负"];
+
+  const msgs = [];
+
+  // 1) 超出常规区间 —— 仅提示
+  vals.forEach((v,i)=>{
+    if(!isNaN(v) && !oddsValid(t, v))
+      msgs.push(`<b>${caps[i]}</b> 赔率 ${v} 超出${c.name}常规区间（${oddsRangeText(t)}），请确认是否为有意设置`);
+  });
+
+  // 2) 隐含概率合计 —— 反映庄家优势
+  if(vals.every(v=>!isNaN(v))){
+    const dec = vals.map(v=>toDecimal(t, v));
+    if(dec.every(d=>d > 1)){
+      const sum = dec.reduce((a,d)=>a + 1/d, 0);
+      const pct = (sum * 100).toFixed(1);
+      const margin = ((sum - 1) * 100).toFixed(1);
+
+      if(sum < 1)
+        msgs.push(`隐含概率合计 <b>${pct}%</b>，低于 100%，存在<b>套利空间</b>，会员可同时押注三个选项稳定获利`);
+      else if(sum < 1.03)
+        msgs.push(`隐含概率合计 <b>${pct}%</b>，庄家优势仅 ${margin}%，偏低`);
+      else if(sum > 1.30)
+        msgs.push(`隐含概率合计 <b>${pct}%</b>，庄家优势 ${margin}%，偏高，可能影响会员参与意愿`);
+    }
+  }
+
+  // 3) 三项赔率相差悬殊
+  if(vals.every(v=>!isNaN(v))){
+    const dec = vals.map(v=>toDecimal(t, v)).filter(d=>d > 1);
+    if(dec.length === 3){
+      const ratio = Math.max(...dec) / Math.min(...dec);
+      if(ratio > 15)
+        msgs.push(`最高与最低赔率相差 <b>${ratio.toFixed(1)} 倍</b>，差距较大，请确认录入无误`);
+    }
+  }
+
+  if(!msgs.length){ box.style.display = "none"; return; }
+  box.className = "odds-warn tip";
+  box.innerHTML = `<b>提示</b>（不影响提交）<ul>${msgs.map(m=>`<li>${m}</li>`).join("")}</ul>`;
+  box.style.display = "";
+}
+
+/* ---------- 场馆三级选择器 ---------- */
   .venue{ margin-top:13px; }
   .venue-search{ display:flex; align-items:center; border:1px solid var(--border);
                  border-radius:4px; overflow:hidden; margin-bottom:11px; background:#fff; }
@@ -379,9 +493,9 @@
   .fx-table{ width:100%; border-collapse:collapse; border:1px solid var(--border-light); }
   .fx-table tr{ border-bottom:1px solid var(--border-light); }
   .fx-table tr:last-child{ border-bottom:none; }
-  .fx-table th{ width:150px; background:#fafafa; text-align:right; padding:14px 18px;
+  .fx-table th{ width:150px; background:#fafafa; text-align:left; padding:13px 18px;
                 font-weight:400; color:var(--text-2); border-right:1px solid var(--border-light); }
-  .fx-table td{ padding:14px 18px; }
+  .fx-table td{ padding:13px 18px; }
   .fx-row{ display:flex; align-items:center; margin-bottom:19px; }
   .fx-lb{ width:190px; flex-shrink:0; text-align:right; padding-right:16px; }
   .fx-ct{ flex:1; min-width:0; display:flex; align-items:center; gap:36px; }
@@ -403,6 +517,21 @@
     border-radius:9px; font-size:11px; font-weight:400;
     background:#f6ffed; color:#389e0d; border:1px solid #b7eb8f; }
 
+
+  /* 赔率带标识 */
+  .odds-fields{ display:flex; gap:12px; }
+  .odds-item{ flex:1; min-width:0; }
+  .odds-item .cap{ display:block; margin-bottom:6px; font-size:13px; color:var(--text-2); }
+  .odds-item .fld{ width:100%; }
+
+
+  /* 赔率合理性提示 */
+  .odds-warn{ margin-top:9px; padding:9px 12px; border-radius:3px; font-size:13px; line-height:1.8; }
+  .odds-warn.tip{ background:#fffbe6; border:1px solid #ffe58f; color:#874d00; }
+  .odds-warn.ok{ background:#f6ffed; border:1px solid #b7eb8f; color:#389e0d; }
+  .odds-warn ul{ margin:4px 0 0; padding-left:17px; }
+  .odds-warn li{ margin-top:3px; }
+
   /* 保存提示 */
 
 
@@ -414,13 +543,6 @@
   .combo .fld{ width:210px; border-radius:0 3px 3px 0; }
   .combo .sel:focus{ position:relative; z-index:1; }
 
-  /* ---------- 竞猜统计 ---------- */
-  .rate{ display:inline-flex; align-items:center; gap:7px; }
-  .rate .bar{ width:52px; height:5px; border-radius:3px; background:#f0f0f0; overflow:hidden; }
-  .rate .bar i{ display:block; height:100%; background:var(--blue); }
-  .rate.low .bar i{ background:#faad14; }
-  .rate.bad .bar i{ background:#ff4d4f; }
-
   /* ---------- 竞猜明细 ---------- */
   .win{ color:#389e0d; }
   .lose{ color:var(--text-2); }
@@ -429,16 +551,15 @@
   .odds-tag .snap{ font-size:11px; color:var(--text-2); border:1px solid var(--border-light);
                    border-radius:2px; padding:0 4px; }
   .od-detail{ display:grid; grid-template-columns:repeat(2,1fr); gap:0 30px; }
-  .od-detail .dt{ margin-bottom:15px; }
-  .od-detail .dt-k{ width:112px; }
+  .od-detail .dt{ margin-bottom:16px; }
 
   /* ---------- 活动详情 ---------- */
   .dt-cols{ display:flex; align-items:flex-start; }
   .dt-l{ flex:1 1 50%; min-width:0; padding-right:34px; }
   .dt-r{ flex:1 1 50%; min-width:0; padding-left:34px; border-left:1px solid var(--border-light); }
-  .dt{ display:flex; margin-bottom:20px; align-items:flex-start; }
-  .dt-k{ width:132px; flex-shrink:0; text-align:right; padding-right:18px; color:var(--text-2); line-height:1.7; }
-  .dt-v{ flex:1; min-width:0; line-height:1.7; word-break:break-word; }
+  .dt{ margin-bottom:20px; }
+  .dt-k{ margin-bottom:6px; color:var(--text-2); font-size:13px; line-height:1.6; }
+  .dt-v{ line-height:1.7; word-break:break-word; }
   .dt-v .muted{ color:var(--placeholder); }
   .dt-v ol{ padding-left:17px; }
   .dt-v ol li{ margin-bottom:7px; }
@@ -506,6 +627,16 @@
 
   .rd-langtip{ margin:-8px 0 20px; font-size:13px; color:var(--text-2); }
   .rd-langtip b{ color:var(--text); font-weight:500; }
+
+
+  /* 新增赛事空行 */
+  .rd-newrow{ background:#f0f9ff !important; }
+  .rd-newrow td{ color:var(--placeholder); }
+  .rd-newrow .link{ color:var(--blue); }
+  .rd-actions{ display:flex; align-items:center; gap:10px; margin-bottom:15px; }
+  .rd-actions .spacer{ flex:1; }
+  .rd-empty-hint{ padding:44px 0; text-align:center; color:var(--placeholder); line-height:2; }
+  .rd-empty-hint b{ display:block; color:var(--text-2); font-size:15px; margin-bottom:4px; }
 
   /* ---------- 录入赛况 ---------- */
   .rd-tabs{ display:flex; align-items:center; gap:0; flex-wrap:wrap; margin-bottom:20px; }
@@ -629,8 +760,8 @@
     <span class="tilde">～</span>
     <input class="fld f-date" placeholder="结束日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
     <input class="fld f-kw" id="cfgKw" placeholder="活动名称 / 配置ID">
-    <select class="sel w130"><option>全部活动状态</option><option>草稿</option><option>未开始</option><option>进行中</option><option>已截止</option><option>已结算</option><option>已关闭</option></select>
-    <select class="sel w130"><option>全部启用状态</option><option>已启用</option><option>未启用</option></select>
+    <select class="sel w130" id="cfgStatus"><option>全部活动状态</option><option>草稿</option><option>未开始</option><option>进行中</option><option>已截止</option><option>已结算</option><option>已关闭</option></select>
+    <select class="sel w130" id="cfgActive"><option>全部启用状态</option><option>已启用</option><option>未启用</option></select>
     <button class="btn btn-primary" onclick="cfgSearch()">搜索</button>
     <button class="btn" onclick="cfgReset()">重置</button>
   </div>
@@ -655,6 +786,7 @@
           <th>展示时间</th>
           <th class="sortable" data-tbl="cfg" data-key="pool" data-type="num"><span class="th-inner">瓜分总奖金<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
           <th>活动状态</th>
+          <th>启用状态</th>
           <th>创建时间</th>
           <th>更新时间</th>
           <th>更新人</th>
@@ -675,10 +807,12 @@
 <!-- ================= 竞猜会员 ================= -->
 <section id="page-member" style="display:none">
   <div class="filters">
-    <select class="sel caliber" id="caliber"><option>首次参与</option><option>最近参与</option></select>
-    <input class="fld f-date left" placeholder="开始日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    <span class="rd-suffix">
+      <span class="sfx" style="border-radius:3px 0 0 3px;border-right:none">最近参与</span>
+      <input class="fld f-date" id="mbFrom" style="border-radius:0" placeholder="开始日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    </span>
     <span class="tilde">～</span>
-    <input class="fld f-date" placeholder="结束日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
+    <input class="fld f-date" id="mbTo" placeholder="结束日期" onfocus="this.type='date'" onblur="if(!this.value)this.type='text'">
     <input class="fld f-account" id="mbAcc" placeholder="会员账号">
     <select class="sel w150" id="mbVip"><option>全部VIP等级</option><option>VIP 1-10</option><option>VIP 11-30</option><option>VIP 31-50</option><option>SVIP</option></select>
     <select class="sel w150" id="mbTier"><option>全部层级</option><option>层级1</option><option>层级2</option><option>层级3</option><option>层级4</option></select>
@@ -688,11 +822,6 @@
     <button class="btn" onclick="reset()">重置</button>
     <div class="spacer"></div>
     <button class="btn btn-primary">导出</button>
-  </div>
-
-  <div class="freshness">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
-    <span>统计数据每 <b>4 小时</b>更新一次，覆盖所有活动。数据来源为区间统计，非实时值。当前数据截止 <b>2024-08-19 12:00:00</b>。</span>
   </div>
 
   <div class="table-wrap">
@@ -707,7 +836,7 @@
           <th class="sortable" data-tbl="mem" data-key="prize" data-type="num"><span class="th-inner">瓜分奖金<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
           <th class="sortable" data-tbl="mem" data-key="earn" data-type="num"><span class="th-inner">获得积分<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
           <th class="sortable" data-tbl="mem" data-key="net" data-type="num"><span class="th-inner">积分净盈亏<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
-          <th>最近参与活动</th>
+          <th class="sortable" data-tbl="mem" data-key="last" data-type="str"><span class="th-inner">最近参与时间<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -832,11 +961,6 @@
     <button class="btn btn-primary">导出</button>
   </div>
 
-  <div class="freshness">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
-    <span>统计数据<b>每日 0 点更新一次</b>，覆盖所有活动，来源为区间聚合数据。当前数据截止 <b>2024-08-19 00:00:00</b>。</span>
-  </div>
-
   <div class="table-wrap">
     <table>
       <thead>
@@ -846,7 +970,6 @@
           <th>活动名称</th>
           <th class="sortable" data-tbl="st" data-key="got" data-type="num"><span class="th-inner">获取积分人数<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
           <th class="sortable" data-tbl="st" data-key="join" data-type="num"><span class="th-inner">参与人数<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
-          <th>参与率</th>
           <th class="sortable" data-tbl="st" data-key="bets" data-type="num"><span class="th-inner">投注总数<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
           <th class="sortable" data-tbl="st" data-key="stake" data-type="num"><span class="th-inner">投注积分<span class="caret"><i class="up"></i><i class="down"></i></span></span></th>
           <th>中奖积分</th>
@@ -859,11 +982,11 @@
       <tbody id="stBody"></tbody>
       <tfoot>
         <tr><td colspan="3" class="label">小计（当前页）</td>
-          <td id="st-got"></td><td id="st-join"></td><td></td>
+          <td id="st-got"></td><td id="st-join"></td>
           <td id="st-bets"></td><td id="st-stake"></td><td id="st-win"></td>
           <td id="st-share"></td><td id="st-amt"></td><td colspan="2"></td></tr>
         <tr><td colspan="3" class="label">总计（全量）</td>
-          <td>36,482</td><td>18,246</td><td></td>
+          <td>36,482</td><td>18,246</td>
           <td>142,860</td><td>26,481,900</td><td>28,206,340</td>
           <td>14,208</td><td>2,184,600.00</td><td colspan="2"></td></tr>
       </tfoot>
@@ -1146,8 +1269,9 @@
           </div>
 
           <div class="fb">
-            <div class="fb-label"><span class="req">*</span>积分上限<span class="help" title="单个会员在本活动内可获得的积分总量上限">?</span></div>
-            <input class="fld w-full" placeholder="请输入积分上限，0表示不限制">
+            <div class="fb-label"><span class="req">*</span>此活动单个用户可拥有的积分最高额度<span class="help" title="仅统计三渠道获得的积分，不含竞猜中奖积分">?</span></div>
+            <input class="fld w-full" placeholder="请输入最高额度，0表示不限制">
+            <div class="fb-hint">达到额度后停止发放，已获得积分不受影响，仍可正常投注。不含竞猜中奖积分。</div>
           </div>
 
           <div class="fb">
@@ -1192,6 +1316,38 @@
               <span class="sub">+</span>
               <input class="fld wide" placeholder="0~999,999,999,999.99">
             </div>
+            <div class="fb-hint">奖金需完成「奖金金额 × 倍数 + 附加值」的有效投注后方可提现。</div>
+          </div>
+
+          <div class="fb">
+            <div class="fb-label">稽核场馆</div>
+            <div class="rds">
+              <label class="rd on"><input type="radio" name="auditVenue" value="all" checked onchange="onVenueMode('audit',this)">全部场馆</label>
+              <label class="rd"><input type="radio" name="auditVenue" value="in" onchange="onVenueMode('audit',this)">勾选指定场馆</label>
+              <label class="rd"><input type="radio" name="auditVenue" value="ex" onchange="onVenueMode('audit',this)">排除指定场馆</label>
+            </div>
+            <div class="venue" id="auditVenue" style="display:none">
+              <div class="venue-search">
+                <select><option>游戏名称</option><option>厂商名称</option><option>场馆名称</option></select>
+                <input placeholder="游戏名称关键字">
+                <button><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg></button>
+              </div>
+              <div class="venue-panel">
+                <div class="venue-cols">
+                  <div class="vcol cat" id="auditCat"></div>
+                  <div class="vcol" id="auditFac"></div>
+                  <div class="vcol" id="auditGame"></div>
+                </div>
+                <div class="venue-foot">
+                  <span class="cnt">共 9999 条</span>
+                  <span class="pgn">‹</span><span class="pgn cur">1</span><span class="pgn">2</span>
+                  <span class="pgn">3</span><span class="pgn cur">…</span><span class="pgn">999</span>
+                  <span class="pgn">›</span>
+                </div>
+              </div>
+              <div class="venue-sum">已选 <b id="auditCnt">0</b> 个游戏</div>
+            </div>
+            <div class="fb-hint">仅所选场馆产生的有效投注计入稽核进度。竞猜投注本身不计入。</div>
           </div>
 
           <div class="save-tip">
@@ -1429,6 +1585,8 @@
         </select>
         <button class="btn btn-primary" onclick="renderRd()">搜索</button>
         <button class="btn" onclick="rdReset()">重置</button>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" onclick="addRdRow()">＋ 添加赛事</button>
       </div>
 
       <div class="rd-banner" id="rdBanner">
@@ -1448,9 +1606,10 @@
       <div class="rd-tablewrap">
         <table class="rd-table">
           <thead><tr>
-            <th>开赛时间</th><th>队伍1</th>
-            <th>赔率<span class="help" title="队伍1获胜的赔率">?</span></th>
-            <th>队伍2</th><th>赔率</th><th>平局赔率</th><th>赛果</th>
+            <th>开赛时间</th><th>队伍1</th><th>队伍2</th>
+            <th>赔率类型</th>
+            <th>主队胜<span class="help" title="队伍1获胜的赔率">?</span></th>
+            <th>平局</th><th>主队负</th><th>赛果</th>
             <th>开奖状态</th><th>发布状态</th><th>操作</th><th>操作人</th><th>操作时间</th>
           </tr></thead>
           <tbody id="rdBody"></tbody>
@@ -1507,7 +1666,7 @@
 
       <div class="fx-warn">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.3v.2"/></svg>
-        开奖结果仅可修改一次，是否确认提交？
+        每次修正均会生成冲正单并记入稽核日志，是否确认提交？
       </div>
     </div>
     <div class="modal-ft" style="justify-content:center">
@@ -1541,14 +1700,29 @@
         <div class="fb-hint" id="mfLock"></div>
       </div>
 
-      <div class="fb"><div class="fb-label"><span class="req">*</span>赔率</div>
-        <div class="drow">
-          <input class="fld" style="flex:1" id="mfO1" placeholder="队伍1赔率">
-          <input class="fld" style="flex:1" id="mfOD" placeholder="平局赔率">
-          <input class="fld" style="flex:1" id="mfO2" placeholder="队伍2赔率">
+      <div class="fb"><div class="fb-label"><span class="req">*</span>赔率设置</div>
+        <div class="odds-item" style="margin-bottom:14px">
+          <span class="cap">赔率类型</span>
+          <select class="sel w-full" id="mfOddsType" onchange="onMfOddsType()">
+            <option value="eu">欧洲盘（Decimal）</option>
+            <option value="hk">香港盘（HK）</option>
+            <option value="my">马来盘（Malay）</option>
+            <option value="id">印尼盘（Indo）</option>
+            <option value="us">美式盘（American）</option>
+          </select>
+          <div class="fb-hint" id="mfTypeHint"></div>
         </div>
+        <div class="odds-fields">
+          <div class="odds-item"><span class="cap" id="capO1">主队胜</span>
+            <input class="fld" id="mfO1" placeholder="1.01 ~ 50.00" oninput="checkOdds()"></div>
+          <div class="odds-item"><span class="cap">平局</span>
+            <input class="fld" id="mfOD" placeholder="1.01 ~ 50.00" oninput="checkOdds()"></div>
+          <div class="odds-item"><span class="cap" id="capO2">主队负</span>
+            <input class="fld" id="mfO2" placeholder="1.01 ~ 50.00" oninput="checkOdds()"></div>
+        </div>
+        <div class="odds-warn tip" id="mfOddsWarn" style="display:none"></div>
         <div class="err" id="mfErr"></div>
-        <div class="fb-hint">允许区间 1.01 ~ 50.00。修改仅对新注单生效，已成交注单按下注瞬间的赔率快照结算。</div>
+        <div class="fb-hint" id="mfOddsHint"></div>
       </div>
 
       <div class="fb"><div class="fb-label">赛果</div>
@@ -1661,12 +1835,12 @@ const cfgRows = [
 
   /* 02 草稿 · 必填项已完成，可发布并启用 */
   {id:"JC2024081909", name:"草稿可发布活动", src:"充值比例", cond:"累计充值", condVal:500, tier:"层级1", vip:"VIP2",
-   lockMode:null, teamCount:4, matches:4, pool:25000, start:"2024-09-05 00:00", end:"2024-09-28 23:59", show:"2024-09-02 00:00 ～ 2024-09-30 23:59",
+   lockMode:"league", teamCount:4, matches:4, pool:25000, start:"2024-09-05 00:00", end:"2024-09-28 23:59", show:"2024-09-02 00:00 ～ 2024-09-30 23:59",
    status:"草稿", active:false, ct:"2024-08-18 15:44:03", ut:"2024-08-19 09:12:37", by:"admin_li"},
 
   /* 03 未开始 · 已启用 · 双数队伍未锁赛制 */
   {id:"JC2024081908", name:"亚冠淘汰赛竞猜", src:"充值比例", cond:"累计充值", condVal:1000, tier:"层级2", vip:"VIP5",
-   lockMode:null, teamCount:4, matches:4, pool:30000, start:"2024-09-05 00:00", end:"2024-09-28 23:59", show:"2024-09-02 00:00 ～ 2024-09-30 23:59",
+   lockMode:null, teamCount:4, matches:0, pool:30000, start:"2024-09-05 00:00", end:"2024-09-28 23:59", show:"2024-09-02 00:00 ～ 2024-09-30 23:59",
    status:"未开始", active:true, ct:"2024-08-18 16:20:44", ut:"2024-08-18 16:20:44", by:"admin_li"},
 
   /* 04 未开始 · 未启用 · 赛事数为 0，不可启用 */
@@ -1676,7 +1850,7 @@ const cfgRows = [
 
   /* 05 未开始 · 单数队伍，仅可配联赛 */
   {id:"JC2024081802", name:"夏季联赛竞猜", src:"充值比例", cond:"累计充值", condVal:1000, tier:"层级2", vip:"VIP5",
-   lockMode:null, teamCount:5, matches:8, pool:30000, start:"2024-08-20 00:00", end:"2024-09-20 23:59", show:"2024-08-18 00:00 ～ 2024-09-22 23:59",
+   lockMode:"league", teamCount:5, matches:8, pool:30000, start:"2024-08-20 00:00", end:"2024-09-20 23:59", show:"2024-08-18 00:00 ～ 2024-09-22 23:59",
    status:"未开始", active:true, ct:"2024-08-08 16:20:44", ut:"2024-08-17 14:08:19", by:"admin_li"},
 
   /* 06 进行中 · 已启用 · 已锁联赛 */
@@ -1766,10 +1940,10 @@ function renderCfg(){
             : `${r.start}<br><span class="sub">～ ${r.end}</span>`}</td>
       <td class="two-line num sub">${r.show==="—" ? "未设置" : r.show.replace("～","<br>～")}</td>
       <td class="num">${r.pool ? n2(r.pool) : '<span class="sub">未设置</span>'}</td>
-      <td><div class="status-cell">
-        ${statusPill(r.status)}
-        ${draft ? "" : `<span class="pill ${r.active?'pill-done':'pill-off'}">${r.active?"已启用":"未启用"}</span>`}
-      </div></td>
+      <td>${statusPill(r.status)}</td>
+      <td>${draft
+            ? '<span class="sub">—</span>'
+            : `<span class="pill ${r.active?'pill-done':'pill-off'}">${r.active?"已启用":"未启用"}</span>`}</td>
       <td class="num sub">${r.ct}</td>
       <td class="num sub">${r.ut}</td>
       <td>${r.by}</td>
@@ -1932,7 +2106,19 @@ function confirmToggle(i){
 
 function cfgSearch(){
   const kw = document.getElementById("cfgKw").value.trim().toLowerCase();
-  cfgData = kw ? cfgRows.filter(r=>r.name.toLowerCase().includes(kw)||r.id.toLowerCase().includes(kw)) : [...cfgRows];
+  const st = document.getElementById("cfgStatus").value;
+  const ac = document.getElementById("cfgActive").value;
+
+  cfgData = cfgRows.filter(r=>{
+    if(kw && !r.name.toLowerCase().includes(kw) && !r.id.toLowerCase().includes(kw)) return false;
+    if(!st.startsWith("全部") && r.status !== st) return false;
+    if(!ac.startsWith("全部")){
+      if(r.status === "草稿") return false;          // 草稿无启用状态
+      if(ac === "已启用" && !r.active) return false;
+      if(ac === "未启用" &&  r.active) return false;
+    }
+    return true;
+  });
   renderCfg();
 }
 function cfgReset(){
@@ -2036,13 +2222,16 @@ let rdCur = null, rdRounds = [], rdIdx = 0, rdEditIdx = null;
 let rdMode = "league", rdLeague = null, rdCup = null;
 
 function mkRdRows(cnt){
+  // 同一轮次内每队只能出场一次，场次上限 = 队伍数 / 2
+  cnt = Math.min(cnt, Math.floor(RD_TEAMS.length / 2));
   return Array.from({length:cnt},(_,i)=>{
     const done = i < 2;
     return {
       start:`2024-08-${String(14+i).padStart(2,"0")} 20:00:00`,
       end:`2024-08-${String(14+i).padStart(2,"0")} 21:50:00`,
-      t1: RD_TEAMS[i % RD_TEAMS.length],
-      t2: RD_TEAMS[(i+1) % RD_TEAMS.length],
+      t1: RD_TEAMS[(i*2) % RD_TEAMS.length],
+      t2: RD_TEAMS[(i*2+1) % RD_TEAMS.length],
+      oddsType:"eu",
       o1:(1.60+i*0.12).toFixed(2), o2:(2.40+i*0.15).toFixed(2), od:(3.20+i*0.08).toFixed(2),
       win: done ? (i % 2 ? "客胜" : "主胜") : null,
       draw: done ? "已开奖" : "未开奖",
@@ -2056,9 +2245,12 @@ function mkRdRows(cnt){
 function openMatches(id){
   rdCur = cfgRows.find(x=>x.id===id);
   if(!rdCur) return;
+
+  // 赛事数为 0 的活动，进入时为空，由运营手动添加
   const n = Math.min(rdCur.matches || 0, 6);
-  rdLeague = [{ name: rdCur.name, rows: n ? mkRdRows(n) : [] }];
-  rdCup    = [{ name: "决赛", rows: n ? mkRdRows(Math.min(n,2)) : [] }];
+  const lock = rdCur.lockMode;
+  rdLeague = [{ name: rdCur.name, rows: (n && lock !== "cup") ? mkRdRows(n) : [] }];
+  rdCup    = [{ name: "决赛",     rows: (n && lock === "cup") ? mkRdRows(Math.min(n,3)) : [] }];
   // 已锁定赛制则进入锁定的那一种，否则默认联赛
   rdMode = rdCur.lockMode || "league";
   document.getElementById("mt-sub").textContent =
@@ -2182,9 +2374,7 @@ function renderRdTabs(){
 function rdPick(i){ rdIdx = i; renderRdTabs(); }
 
 function rdAdd(){
-  rdRounds.push({ name:"", rows:[{
-    start:null, end:null, t1:null, t2:null, o1:null, o2:null, od:null,
-    win:null, draw:"未开奖", pub:"未发布", by:null, at:null }] });
+  rdRounds.push({ name:"", rows:[] });
   rdIdx = rdRounds.length - 1;
   renderRdTabs();
 }
@@ -2228,24 +2418,87 @@ function renderRd(){
   if(fp) rows = rows.filter(r=>r.pub===fp);
 
   const body = document.getElementById("rdBody");
+  const total = rdRounds[rdIdx].rows.length;
   if(!rows.length){
-    body.innerHTML = `<tr><td colspan="12"><div class="rd-empty">暂无数据</div></td></tr>`;
+    body.innerHTML = total
+      ? `<tr><td colspan="13"><div class="rd-empty">当前筛选条件下无匹配赛事</div></td></tr>`
+      : `<tr><td colspan="13"><div class="rd-empty-hint">
+           <b>尚未添加赛事</b>
+           点击右上角「＋ 添加赛事」新增一场，再点「修改」补全对阵与赔率
+         </div></td></tr>`;
     return;
   }
   body.innerHTML = rows.map(r=>`
-    <tr class="${r.start==null?"on":""}">
-      <td>${D(r.start)}</td><td>${D(r.t1)}</td><td>${D(r.o1)}</td>
-      <td>${D(r.t2)}</td><td>${D(r.o2)}</td><td>${D(r.od)}</td>
+    <tr class="${r.isNew ? "rd-newrow" : ""}">
+      <td>${D(r.start)}</td><td>${D(r.t1)}</td><td>${D(r.t2)}</td>
+      <td>${r.o1 ? (ODDS_TYPES[r.oddsType||"eu"]||{}).name : D(null)}</td>
+      <td>${D(r.o1)}</td><td>${D(r.od)}</td><td>${D(r.o2)}</td>
       <td>${D(r.win)}</td>
       <td><span class="${r.draw==="已开奖"?"st-ok":"st-warn"}">${r.draw}</span></td>
       <td>${r.pub}</td>
-      <td>${r.draw==="已开奖"
-            ? (r.fixed
-                ? '<span class="link disabled" title="开奖结果仅可修改一次">修正开奖结果</span>'
-                : `<span class="link" onclick="openFix(${r._i})">修正开奖结果</span>`)
-            : `<span class="link" onclick="openRdForm(${r._i})">修改</span>`}</td>
+      <td><div class="ops">${r.draw==="已开奖"
+            ? `<span class="link" onclick="openFix(${r._i})">修正开奖结果</span>${
+                r.fixCount ? `<span class="sub">已修正${r.fixCount}次</span>` : ""}`
+            : `<span class="link" onclick="openRdForm(${r._i})">修改</span>` +
+              (r.pub === "未发布"
+                ? `<span class="sep">|</span><span class="op-danger" onclick="delRdRow(${r._i})">删除</span>`
+                : "")}</div></td>
       <td>${D(r.by)}</td><td>${D(r.at)}</td>
     </tr>`).join("");
+}
+
+
+/* 添加赛事：插入空行，由运营点「修改」补全 */
+function addRdRow(){
+  // 队伍是否已全部排完
+  const used = new Set();
+  rdRounds[rdIdx].rows.forEach(r=>{ if(r.t1) used.add(r.t1); if(r.t2) used.add(r.t2); });
+  const left = RD_TEAMS.filter(t=>!used.has(t));
+  if(left.length < 2){
+    const unit = rdMode === "cup" ? "轮次" : "联赛";
+    confirm2({ title:"无法添加赛事", icon:ICON_WARN,
+      lead:`本${unit}的队伍已全部排完`,
+      desc:`同一${unit}内每支队伍只能出场一次。当前共 ${RD_TEAMS.length} 支队伍，` +
+           `已排 ${rdRounds[rdIdx].rows.length} 场，剩余可用队伍不足 2 支。` +
+           (rdMode === "cup" ? "<br>如需继续，请新增轮次。" : "<br>如需增加场次，请先在活动配置中补充队伍。"),
+      kv:[["队伍总数", RD_TEAMS.length + " 支"],["已排场次", rdRounds[rdIdx].rows.length + " 场"],
+          ["剩余队伍", left.length + " 支"]],
+      okText:"知道了" });
+    return;
+  }
+
+  if(rdMode === "cup" && !rdRounds[rdIdx].name.trim()){
+    confirm2({ title:"请先填写轮次名称", icon:ICON_WARN,
+      lead:"当前轮次尚未命名",
+      desc:"请先在上方轮次标签中填写名称，再添加赛事。",
+      okText:"知道了" });
+    return;
+  }
+  rdRounds[rdIdx].rows.push({
+    start:null, end:null, t1:null, t2:null,
+    oddsType:"eu", o1:null, o2:null, od:null,
+    win:null, draw:"未开奖", pub:"未发布", by:null, at:null, isNew:true
+  });
+  // 清空筛选，确保新行可见
+  document.getElementById("rdFilterDraw").value = "";
+  document.getElementById("rdFilterPub").value  = "";
+  renderRd();
+  const tb = document.getElementById("rdBody");
+  const last = tb.lastElementChild;
+  if(last) last.scrollIntoView({block:"nearest"});
+}
+
+/* 删除未发布且未填写的空行 */
+function delRdRow(i){
+  const r = rdRounds[rdIdx].rows[i];
+  const named = r.t1 || r.t2 || r.start;
+  confirm2({
+    title:"删除赛事",
+    lead: named ? `确认删除「${r.t1 || "?"} VS ${r.t2 || "?"}」？` : "确认删除该条空赛事？",
+    desc:"该赛事尚未发布，删除后不可恢复。",
+    okText:"确认删除", danger:true,
+    onOk:()=>{ rdRounds[rdIdx].rows.splice(i,1); renderRd(); }
+  });
 }
 
 function openRdForm(i){
@@ -2255,15 +2508,27 @@ function openRdForm(i){
   document.getElementById("mf-sub").textContent =
     `${rdRounds[rdIdx].name || "未命名"} · 第 ${i+1} 场`;
 
-  const opts = ['<option value="">请选择</option>']
-    .concat(RD_TEAMS.map(t=>`<option>${t}</option>`)).join("");
+  // 本轮次内已被其他赛事占用的队伍
+  const used = new Set();
+  rdRounds[rdIdx].rows.forEach((x,k)=>{
+    if(k === i) return;
+    if(x.t1) used.add(x.t1);
+    if(x.t2) used.add(x.t2);
+  });
+
+  const mkOpts = self => ['<option value="">请选择</option>'].concat(
+    RD_TEAMS.map(t=>{
+      const busy = used.has(t) && t !== self;
+      return `<option ${busy ? "disabled" : ""}>${t}${busy ? "（本轮已出场）" : ""}</option>`;
+    })).join("");
+
   const t1 = document.getElementById("mfT1"), t2 = document.getElementById("mfT2");
-  t1.innerHTML = opts; t2.innerHTML = opts;
+  t1.innerHTML = mkOpts(r.t1); t2.innerHTML = mkOpts(r.t2);
   t1.value = r.t1 || ""; t2.value = r.t2 || "";
   t1.disabled = t2.disabled = locked;
-  document.getElementById("mfLock").textContent = locked
+  document.getElementById("mfLock").innerHTML = locked
     ? "该场比赛已发布生效，队伍不可修改。"
-    : "队伍来自活动配置中的队伍列表，两队不可相同。";
+    : `队伍来自活动配置中的队伍列表。两队不可相同，且<strong>同一${rdMode==="cup"?"轮次":"联赛"}内每支队伍只能出场一次</strong>，已出场的队伍不可再选。`;
 
   // 活动时间区间约束
   const actS = rdCur && rdCur.start !== "—" ? rdCur.start.replace(" ","T") : null;
@@ -2279,6 +2544,15 @@ function openRdForm(i){
 
   document.getElementById("mfStart").value = r.start ? r.start.slice(0,16).replace(" ","T") : "";
   document.getElementById("mfEnd").value   = r.end   ? r.end.slice(0,16).replace(" ","T")   : "";
+  // 赔率类型：按该场赛事自身设置，默认欧洲盘
+  document.getElementById("mfOddsType").value = r.oddsType || "eu";
+  document.getElementById("mfOddsHint").innerHTML =
+    `修改赔率仅对新注单生效，已成交注单按下注瞬间的赔率快照结算。` +
+    `<br>切换赔率类型不会自动换算已填数值，需重新录入。`;
+  onMfOddsType();
+
+  document.getElementById("capO1").textContent = r.t1 ? `主队胜（${r.t1}）` : "主队胜";
+  document.getElementById("capO2").textContent = r.t2 ? `主队负（${r.t2} 胜）` : "主队负";
   document.getElementById("mfO1").value = r.o1 || "";
   document.getElementById("mfOD").value = r.od || "";
   document.getElementById("mfO2").value = r.o2 || "";
@@ -2295,6 +2569,7 @@ function openRdForm(i){
     : "比赛结束后才能设置赛果。";
 
   document.getElementById("mfErr").textContent = "";
+  checkOdds();
   openMask("mask-mform");
 }
 
@@ -2306,9 +2581,22 @@ function saveRdRow(){
   const err = document.getElementById("mfErr");
 
   if(t1 && t2 && t1 === t2){ err.textContent = "队伍1与队伍2不可相同"; return; }
-  if(os.some(v=>!isNaN(v) && (v < 1.01 || v > 50))){
-    err.textContent = "赔率超出 1.01 ~ 50.00 的允许区间，无法提交"; return;
+
+  // 同一轮次内队伍不可重复出场
+  const dupUsed = new Set();
+  rdRounds[rdIdx].rows.forEach((x,k)=>{
+    if(k === rdEditIdx) return;
+    if(x.t1) dupUsed.add(x.t1);
+    if(x.t2) dupUsed.add(x.t2);
+  });
+  const dup = [t1, t2].filter(t=>t && dupUsed.has(t));
+  if(dup.length){
+    err.innerHTML = `<strong>${dup.join("、")}</strong> 已在本${rdMode==="cup"?"轮次":"联赛"}的其他场次中出场，` +
+                    `同一${rdMode==="cup"?"轮次":"联赛"}内每支队伍只能出场一次`;
+    return;
   }
+
+  err.textContent = "";
 
   const st = document.getElementById("mfStart").value;
   const et = document.getElementById("mfEnd").value;
@@ -2333,7 +2621,9 @@ function saveRdRow(){
     }
   }
 
+  r.isNew = false;
   Object.assign(r, {
+    oddsType: document.getElementById("mfOddsType").value,
     start: st ? st.replace("T"," ") + ":00" : r.start,
     end:   et ? et.replace("T"," ") + ":00" : r.end,
     t1: t1 || r.t1, t2: t2 || r.t2,
@@ -2388,8 +2678,9 @@ function openFix(i){
 
   document.getElementById("fxInfo").innerHTML = `
     <tr><th>开赛时间</th><td>${r.start || "--"}</td></tr>
-    <tr><th>队伍1 / 赔率</th><td>${r.t1 || "--"} / ${r.o1 || "--"}</td></tr>
-    <tr><th>队伍2 / 赔率</th><td>${r.t2 || "--"} / ${r.o2 || "--"}</td></tr>
+    <tr><th>赔率类型</th><td>${(ODDS_TYPES[r.oddsType||"eu"]||{}).full || "--"}</td></tr>
+    <tr><th>队伍1 / 主队胜赔率</th><td>${r.t1 || "--"} / ${r.o1 || "--"}</td></tr>
+    <tr><th>队伍2 / 主队负赔率</th><td>${r.t2 || "--"} / ${r.o2 || "--"}</td></tr>
     <tr><th>平局赔率</th><td>${r.od || "--"}</td></tr>
     <tr><th>赛果</th><td>${r.win || "--"}</td></tr>`;
 
@@ -2429,15 +2720,16 @@ function saveFix(){
   confirm2({
     title:"确认修正开奖结果",
     lead:`将赛果由「${r.win}」修正为「${newWin}」？`,
-    desc:`开奖结果<strong>仅可修改一次</strong>，提交后不可再次修正。<br>
-          系统将按所选处理方式生成冲正单，需复核通过后执行。`,
+    desc:`系统将按所选处理方式生成<strong>冲正单</strong>，需复核通过后执行。<br>
+          每次修正均记入稽核日志，可追溯修正次数与操作人。`,
     kv:[["赛事", `${r.t1} VS ${r.t2}`],
         ["修正后赔率", document.getElementById("fxOdds").value],
         ["补发积分", add ? "是" : "否"],
         ["扣除错误积分", sub ? "是" : "否"]],
     okText:"确认提交", danger:true,
     onOk:()=>{
-      r.win = newWin; r.fixed = true;
+      r.win = newWin;
+      r.fixCount = (r.fixCount || 0) + 1;
       r.by = "admin_current"; r.at = "2024-08-19 12:00:00";
       renderRd();
     }
@@ -2475,7 +2767,7 @@ function openDetail(id){
     row("展示时间", r.show==="—" ? '<span class="muted">未设置</span>' : r.show.replace("～","-")) +
     row("参与条件", condText(r)) +
     row("获取积分", EARN_TEXT[r.src] || r.src) +
-    row("积分上限", "100,000") +
+    row("单用户积分最高额度", "100,000") +
     row("下注限额", "100.00 ~ 500.00") +
     row("实际瓜分金额", r.pool ? n2(r.pool) : '<span class="muted">未设置</span>') +
     row("展示瓜分金额", r.pool ? n2(r.pool * 40) : '<span class="muted">未设置</span>') +
@@ -2490,6 +2782,7 @@ function openDetail(id){
     row("参与VIP等级", r.vip === "不限" ? "全部VIP等级" : `${r.vip} 及以上`) +
     row("指定代理账号", "否") +
     row("稽核倍数", "1.00 倍 + 0.00") +
+    row("稽核场馆", "全部场馆") +
     row("创建时间", r.ct) +
     row("更新时间", r.ut) +
     row("更新人", r.by) +
@@ -2671,6 +2964,120 @@ document.addEventListener("mouseout", e=>{
   if(e.target.closest(".txt[data-full]")) vtip.classList.remove("show");
 });
 
+
+/* ---------- 赔率类型 ---------- */
+const ODDS_TYPES = {
+  eu: { name:"欧洲盘", full:"欧洲盘（Decimal）", min:1.01, max:50.00, step:"0.01",
+        ranges:[[1.01, 50.00]], dec:2,
+        desc:"含本金。派奖 = 投注积分 × 赔率。",
+        ph:"1.01 ~ 50.00" },
+  hk: { name:"香港盘", full:"香港盘（HK）", min:0.01, max:49.00, step:"0.01",
+        ranges:[[0.01, 49.00]], dec:2,
+        desc:"不含本金。派奖 = 投注积分 ×（赔率 + 1）。",
+        ph:"0.01 ~ 49.00" },
+  my: { name:"马来盘", full:"马来盘（Malay）", min:-1.00, max:1.00, step:"0.01",
+        ranges:[[-1.00, -0.01], [0.01, 1.00]], dec:2,
+        desc:"正值不含本金；负值为让步盘，不可为 0。",
+        ph:"-1.00 ~ 1.00（不含 0）" },
+  id: { name:"印尼盘", full:"印尼盘（Indo）", min:-100, max:100, step:"0.01",
+        ranges:[[-100, -1.00], [1.00, 100]], dec:2,
+        desc:"绝对值须 ≥ 1.00，不可落在 -1.00 ~ 1.00 之间。",
+        ph:"±1.00 ~ ±100.00" },
+  us: { name:"美式盘", full:"美式盘（American）", min:-10000, max:10000, step:"1",
+        ranges:[[-10000, -100], [100, 10000]], dec:0,
+        desc:"绝对值须 ≥ 100，不可落在 -100 ~ 100 之间。",
+        ph:"±100 ~ ±10000" }
+};
+
+let curOddsType = "eu";
+
+function oddsRangeText(t){
+  const c = ODDS_TYPES[t];
+  return c.ranges.map(([a,b])=>`${a.toFixed(c.dec)} ~ ${b.toFixed(c.dec)}`).join(" 或 ");
+}
+
+function oddsValid(t, v){
+  if(isNaN(v)) return false;
+  return ODDS_TYPES[t].ranges.some(([a,b])=>v >= a && v <= b);
+}
+
+function onMfOddsType(){
+  const t = document.getElementById("mfOddsType").value;
+  const c = ODDS_TYPES[t];
+  ["mfO1","mfOD","mfO2"].forEach(k=>{
+    const el = document.getElementById(k);
+    el.placeholder = c.ph;
+    el.removeAttribute("min"); el.removeAttribute("max");
+  });
+  document.getElementById("mfTypeHint").innerHTML =
+    `常规区间 <strong>${oddsRangeText(t)}</strong>。${c.desc}`;
+  checkOdds();
+}
+
+
+/* ---------- 赔率合理性检查（仅提示，不阻断） ---------- */
+
+/* 各盘口统一换算为欧洲盘（含本金），用于计算隐含概率 */
+function toDecimal(t, v){
+  if(isNaN(v)) return NaN;
+  switch(t){
+    case "eu": return v;
+    case "hk": return v + 1;
+    case "my": return v > 0 ? v + 1 : (1 / -v) + 1;
+    case "id": return v > 0 ? v + 1 : (1 / -v) + 1;
+    case "us": return v > 0 ? v / 100 + 1 : 100 / -v + 1;
+    default:   return v;
+  }
+}
+
+function checkOdds(){
+  const box = document.getElementById("mfOddsWarn");
+  const t   = document.getElementById("mfOddsType").value || "eu";
+  const c   = ODDS_TYPES[t];
+  const vals = ["mfO1","mfOD","mfO2"].map(k=>parseFloat(document.getElementById(k).value));
+  const caps = ["主队胜","平局","主队负"];
+
+  const msgs = [];
+
+  // 1) 超出常规区间 —— 仅提示
+  vals.forEach((v,i)=>{
+    if(!isNaN(v) && !oddsValid(t, v))
+      msgs.push(`<b>${caps[i]}</b> 赔率 ${v} 超出${c.name}常规区间（${oddsRangeText(t)}），请确认是否为有意设置`);
+  });
+
+  // 2) 隐含概率合计 —— 反映庄家优势
+  if(vals.every(v=>!isNaN(v))){
+    const dec = vals.map(v=>toDecimal(t, v));
+    if(dec.every(d=>d > 1)){
+      const sum = dec.reduce((a,d)=>a + 1/d, 0);
+      const pct = (sum * 100).toFixed(1);
+      const margin = ((sum - 1) * 100).toFixed(1);
+
+      if(sum < 1)
+        msgs.push(`隐含概率合计 <b>${pct}%</b>，低于 100%，存在<b>套利空间</b>，会员可同时押注三个选项稳定获利`);
+      else if(sum < 1.03)
+        msgs.push(`隐含概率合计 <b>${pct}%</b>，庄家优势仅 ${margin}%，偏低`);
+      else if(sum > 1.30)
+        msgs.push(`隐含概率合计 <b>${pct}%</b>，庄家优势 ${margin}%，偏高，可能影响会员参与意愿`);
+    }
+  }
+
+  // 3) 三项赔率相差悬殊
+  if(vals.every(v=>!isNaN(v))){
+    const dec = vals.map(v=>toDecimal(t, v)).filter(d=>d > 1);
+    if(dec.length === 3){
+      const ratio = Math.max(...dec) / Math.min(...dec);
+      if(ratio > 15)
+        msgs.push(`最高与最低赔率相差 <b>${ratio.toFixed(1)} 倍</b>，差距较大，请确认录入无误`);
+    }
+  }
+
+  if(!msgs.length){ box.style.display = "none"; return; }
+  box.className = "odds-warn tip";
+  box.innerHTML = `<b>提示</b>（不影响提交）<ul>${msgs.map(m=>`<li>${m}</li>`).join("")}</ul>`;
+  box.style.display = "";
+}
+
 /* ---------- 场馆三级选择器 ---------- */
 const VCATS = ["\u{1F3B2}","\u{1F3B0}","\u26BD","\u{1F3AE}","\u{1F0CF}","\u{1F3B1}","\u{1F004}","\u{1F3AF}","\u{1F3AA}"];
 const vState = {};
@@ -2759,7 +3166,7 @@ function render(){
       <td class="num">${n2(r.prize)}</td>
       <td><span class="link" onclick="openSource(${r.uid})">${n(r.earn)}</span></td>
       <td class="num ${r.win - r.stake >= 0 ? "win" : "lose"}">${r.win - r.stake >= 0 ? "+" : ""}${n(r.win - r.stake)}</td>
-      <td>${r.act}</td>
+      <td class="num sub">${r.last}</td>
     </tr>`).join("") ||
     `<tr><td colspan="11" style="text-align:center;color:#bfbfbf;padding:50px">暂无数据</td></tr>`;
   const sum = k => data.reduce((a,r)=>a+r[k],0);
@@ -2774,6 +3181,8 @@ function render(){
 }
 
 function search(){
+  const from = document.getElementById("mbFrom").value;
+  const to   = document.getElementById("mbTo").value;
   const acc  = document.getElementById("mbAcc").value.trim().toLowerCase();
   const vip  = document.getElementById("mbVip").value;
   const tier = document.getElementById("mbTier").value;
@@ -2788,12 +3197,22 @@ function search(){
     return !v.startsWith("SVIP") && vipNo(v) >= lo && vipNo(v) <= hi;
   };
 
-  data = rows.filter(r=>
-    (!acc || r.account.toLowerCase().includes(acc)) &&
-    inVip(r.vip) &&
-    (tier.startsWith("全部") || r.tier === tier) &&
-    (tag.startsWith("全部")  || r.tag  === tag) &&
-    (act.startsWith("全部")  || r.act  === act));
+  data = rows.filter(r=>{
+    if(acc && !r.account.toLowerCase().includes(acc)) return false;
+    if(!inVip(r.vip)) return false;
+    if(!tier.startsWith("全部") && r.tier !== tier) return false;
+    if(!tag.startsWith("全部")  && r.tag  !== tag)  return false;
+    if(!act.startsWith("全部")  && r.act  !== act)  return false;
+
+    // 最近参与时间落在所选区间内
+    if(from || to){
+      if(r.last === "—") return false;
+      const d = r.last.slice(0,10);
+      if(from && d < from) return false;
+      if(to   && d > to)   return false;
+    }
+    return true;
+  });
   render();
 }
 function reset(){
@@ -2806,11 +3225,10 @@ function reset(){
 
 function openOrders(uid){
   const r = rows.find(x=>x.uid===uid);
-  const caliber = document.getElementById("caliber").value;
   const list = odRows.filter(o=>o.acc === r.account);
 
   document.getElementById("o-sub").textContent =
-    `${r.account}（UID ${r.uid}）· ${r.vip} · ${r.tier}　|　时间口径：${caliber}　|　` +
+    `${r.account}（UID ${r.uid}）· ${r.vip} · ${r.tier}　|　` +
     `累计 ${n(r.bets)} 笔，本页展示最近 ${list.length} 笔`;
 
   document.getElementById("o-body").innerHTML = list.map(o=>`
@@ -2906,6 +3324,14 @@ const odRows = Array.from({length:26},(_,i)=>{
     settleAt: status === "未结算" ? null : `2024-08-${day} 22:00:00`,
     status, won
   };
+});
+
+/* 最近参与时间 = 该会员最后一笔投注的时间 */
+rows.forEach((m,i)=>{
+  const os = odRows.filter(o=>o.acc === m.account).map(o=>o.betAt).sort();
+  // 明细为抽样数据，未覆盖的会员按其活跃度生成
+  m.last = os.length ? os[os.length-1]
+         : `2024-08-${String(6 + (i % 12)).padStart(2,"0")} ${String(9 + i % 12).padStart(2,"0")}:${String((i*7)%60).padStart(2,"0")}:00`;
 });
 
 let odData = [...odRows];
@@ -3058,11 +3484,6 @@ ST_ACTS.forEach((a,ai)=>{
 
 let stData = [...stRows];
 
-function rateTag(v){
-  const pct = (v*100).toFixed(1);
-  const cls = v >= 0.5 ? "" : v >= 0.3 ? "low" : "bad";
-  return `<span class="rate ${cls}"><span class="bar"><i style="width:${Math.min(100,v*100)}%"></i></span>${pct}%</span>`;
-}
 
 function renderSt(){
   document.getElementById("stBody").innerHTML = stData.map((r,i)=>`
@@ -3072,7 +3493,6 @@ function renderSt(){
       <td>${r.name}</td>
       <td class="num">${n(r.got)}</td>
       <td class="num">${n(r.join)}</td>
-      <td>${rateTag(r.join / r.got)}</td>
       <td class="num">${n(r.bets)}</td>
       <td class="num">${n(r.stake)}</td>
       <td class="num">${n(r.win)}</td>
@@ -3081,7 +3501,7 @@ function renderSt(){
       <td class="num">${n2(r.amount / r.share)}</td>
       <td><span class="link" onclick="openStDetail('${r.cfg}')">详情</span></td>
     </tr>`).join("") ||
-    `<tr><td colspan="13" style="text-align:center;color:#bfbfbf;padding:50px">暂无数据</td></tr>`;
+    `<tr><td colspan="12" style="text-align:center;color:#bfbfbf;padding:50px">暂无数据</td></tr>`;
 
   const sum = k => stData.reduce((a,r)=>a + r[k], 0);
   [["st-got","got"],["st-join","join"],["st-bets","bets"],
@@ -3118,7 +3538,6 @@ function openStDetail(cfg){
   document.getElementById("stCards").innerHTML = `
     <div><span>获取积分人数</span><b>${n(t("got"))}</b></div>
     <div><span>参与人数</span><b>${n(t("join"))}</b></div>
-    <div><span>参与率</span><b>${(t("join")/t("got")*100).toFixed(1)}%</b></div>
     <div><span>投注总数</span><b>${n(t("bets"))}</b></div>
     <div><span>瓜分人数</span><b>${n(t("share"))}</b></div>
     <div><span>瓜分金额</span><b>${n2(t("amount"))}</b></div>`;
