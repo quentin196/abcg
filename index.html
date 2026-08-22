@@ -948,6 +948,42 @@ select.msel{appearance:none;-webkit-appearance:none;padding-right:24px;cursor:po
 .modal.jcmfmodal{width:620px;}
 
 </style>
+<style>
+/* ===== 多站点新增标记 ===== */
+.msnew{position:relative;}
+.msnew::after{content:"";position:absolute;top:-4px;right:-7px;left:auto;width:8px;height:8px;border-radius:50%;
+  background:#ff4d4f;box-shadow:0 0 0 2px #fff,0 0 0 3px rgba(255,77,79,.28);z-index:6;pointer-events:none;}
+th.msnew::after{top:5px;right:4px;}
+.filterbar .fitem.msnew::after{top:-2px;left:-3px;right:auto;}
+button.msnew::after{top:-4px;right:-4px;}
+.siterow label.msnew::after{top:1px;right:auto;left:-13px;}
+.mrsite label.msnew::after{top:2px;right:auto;left:-13px;}
+.sitelock.msnew::after,.bxml.msnew::after,.jcmtsub.msnew::after,.jcmfsub.msnew::after,
+.jcawsub.msnew::after,.bxpl.msnew::after{top:4px;right:auto;left:-12px;}
+.bbstat .bbsi.msnew::after{top:-1px;right:-10px;}
+.dl.msnew::after,.bbofl.msnew::after,.bblbl.msnew::after,.jccap.msnew::after{top:2px;right:auto;left:-12px;}
+.bigbox .biglabel.msnew::after{top:2px;right:auto;left:-12px;}
+body.msoff .msnew::after{display:none !important;}
+.msi{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff4d4f;
+  vertical-align:super;margin-left:5px;box-shadow:0 0 0 2px rgba(255,77,79,.22);}
+body.msoff .msi{display:none !important;}
+
+.msbar{position:fixed;right:14px;bottom:14px;z-index:900;width:206px;opacity:.97;background:#fff;
+  border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 6px 22px rgba(15,23,42,.14);
+  font-size:12.5px;overflow:hidden;}
+.msbar .mshd{display:flex;align-items:center;gap:7px;padding:9px 11px;border-bottom:1px solid #eef0f3;background:#fafbfc;}
+.msbar .msdot{width:8px;height:8px;border-radius:50%;background:#ff4d4f;flex:0 0 auto;
+  box-shadow:0 0 0 2px #fff,0 0 0 3px rgba(255,77,79,.28);}
+.msbar .mshdt{font-weight:bold;color:#1f2937;}
+.msbar .mscnt{margin-left:auto;background:#fff1f0;color:#cf1322;border-radius:9px;padding:1px 8px;font-weight:bold;}
+.msbar .mstg{border:1px solid #e5e7eb;background:#fff;border-radius:4px;padding:2px 8px;cursor:pointer;color:#555;font-size:12px;}
+.msbar .mstg:hover{color:var(--primary);border-color:var(--primary);}
+.msbar .msls{padding:7px 11px;display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;}
+.msbar .msli{display:flex;align-items:center;gap:5px;color:#555;cursor:help;white-space:nowrap;}
+.msbar .mscode{background:#eef4ff;color:#2b5fbe;border-radius:3px;padding:0 5px;font-size:11px;}
+.msbar .msft{padding:6px 11px 8px;color:#8a929c;line-height:1.55;border-top:1px solid #eef0f3;font-size:11.5px;}
+.msbar.mini .msls,.msbar.mini .msft{display:none;}
+</style>
 </head>
 <body>
 <div id="app">
@@ -1020,6 +1056,7 @@ function renderTabbar(){
   return "tag off";
 }
 function renderContent(){
+  setTimeout(msSyncBadge, 0);
   var mod = findModule(STATE.curModule);
   var tab = findTab(mod, STATE.curTab);
   var box = document.getElementById("content"); box.innerHTML="";
@@ -1112,6 +1149,7 @@ function renderFilterBar(card, tabRef){
   var list = tabRef._expanded ? tabRef.filters.concat(more) : tabRef.filters;
   list.forEach(function(f){
     var item = el("div","fitem");
+    if(f.k==="site") msMark(item, "C1");
     var span = f.span || (f.type==="daterange"?8:(f.type==="combo"?6:(f.type==="date"?6:4)));
     item.style.gridColumn = "span "+span;
     if(f.type==="daterange"){
@@ -1327,6 +1365,8 @@ function renderToolbar(card, tabRef){
     if(b.ic) btn.appendChild(el("span","bico", b.ic));
     btn.appendChild(document.createTextNode(label));
     btn.onclick = function(){ dispatch(tabRef, b.act, null); };
+    if(MS_SWITCH_ACTS[b.act]) msMark(btn, "C6");
+    else if(MS_CFG_ACTS[b.act]) msMark(btn, "C5");
     bar.appendChild(btn);
   });
   var tools = tabRef.tools;
@@ -1447,6 +1487,7 @@ function renderTable(card, tabRef){
   if(tabRef.checkable){ var th0=document.createElement("th"); th0.style.width="34px"; htr.appendChild(th0); }
   tabRef.columns.forEach(function(c){
     var th=document.createElement("th");
+    var _msTh = (c.k==="site" && /站点/.test(c.l||""));
     if(c.w) th.style.width = c.w;
     if(c.align) th.style.textAlign = c.align;
     if(c.sortable){
@@ -1458,6 +1499,11 @@ function renderTable(card, tabRef){
       th.appendChild(si);
       th.onclick = function(){ sortRows(tabRef, c); };
     } else { th.textContent=c.l; }
+    if(_msTh){
+      th.setAttribute("data-ms","C2");
+      th.title = "【多站点新增 · C2 "+MS_NAMES.C2+"】"+MS_TIPS.C2;
+      th.appendChild(el("i","msi",""));
+    }
     htr.appendChild(th);
   });
   if(tabRef.rowActions && tabRef.rowActions.length){ var tha=document.createElement("th"); tha.textContent="操作"; htr.appendChild(tha); }
@@ -1740,6 +1786,7 @@ function renderTable(card, tabRef){
   card.appendChild(pagi);
 }function closeModal(){ document.getElementById("modalRoot").innerHTML=""; }
 function openModal(title, bodyEl, footButtons, widthCls){
+  setTimeout(function(){ msScan(document.getElementById("modalRoot")); }, 0);
   var root = document.getElementById("modalRoot"); root.innerHTML="";
   var mask = el("div","mask");
   mask.onclick = function(e){ if(e.target===mask) closeModal(); };
@@ -1936,6 +1983,79 @@ function openFormModal(mode, tabRef, idx){
   ], "wide");
 }
 var SITE_LIST = ["站点A","站点B","站点C","站点D","站点E","站点F"];
+/* ============ 多站点新增标记 ============ */
+var MS_ON = true;
+var MS_TIPS = {
+  C1:"查询区「站点」下拉 —— 单选，置于查询区第一位，默认「所有站点」，选所有站点时跨站取数",
+  C2:"列表「归属站点」字段 —— 文本列 110px，置于第一列，只读，参与排序与导出，不得隐藏",
+  C3:"新增类弹窗「关联站点」—— 平铺单选，必填，默认站点A，保存后即为归属站点且不可修改",
+  C4:"编辑／详情弹窗「归属站点」—— 平铺单选全部置灰只读，取该数据自身站点，不取查询区所选站点",
+  C5:"站点平铺配置弹窗 —— 每站点一套独立配置，切站执行「暂存 → 加载 → 重绘」三步",
+  C6:"站点平铺开关弹窗 —— 原页面单个开关改为按钮＋弹窗，站点名在左开关在右，各站点独立",
+  C7:"派发对象区「归属站点」—— 必填下拉（不含所有站点），按「归属站点＋账号」双条件校验"
+};
+var MS_NAMES = {C1:"查询站点",C2:"归属站点列",C3:"关联站点",C4:"锁定归属站点",C5:"平铺配置",C6:"平铺开关",C7:"派发对象站点"};
+function msMark(node, code){
+  if(!node || !node.classList) return node;
+  node.classList.add("msnew");
+  node.setAttribute("data-ms", code);
+  node.title = "【多站点新增 · "+code+" "+MS_NAMES[code]+"】" + MS_TIPS[code];
+  return node;
+}
+var MS_TEXT_RE = /^(归属站点|关联站点|查看站点)[：:]?$/;
+function msScan(root){
+  if(!root || !root.querySelectorAll) return;
+  var pairs = [[".sitelock","C4"],[".mrsite label","C7"],[".bigbox .biglabel","C6"],
+               [".jcmtsub","C4"],[".jcmfsub","C4"],[".bxml","C4"],[".jcawsub","C7"],
+               [".bxpl","C4"],[".bbstat .bbsi:first-child","C2"],[".bborder .bbof:first-child .bbofl","C4"]];
+  pairs.forEach(function(pr){
+    Array.prototype.forEach.call(root.querySelectorAll(pr[0]), function(e){
+      if(!e.getAttribute("data-ms")) msMark(e, pr[1]);
+    });
+  });
+  Array.prototype.forEach.call(root.querySelectorAll(".dl,.bbofl,.jccap,.bblbl,label"), function(e){
+    if(e.getAttribute("data-ms")) return;
+    if(e.children.length && !e.querySelector(".req")) return;
+    if(MS_TEXT_RE.test((e.textContent||"").trim().replace(/^\*/,""))) msMark(e, "C4");
+  });
+  msSyncBadge();
+}
+var MS_SWITCH_ACTS = {mysticSwitch:1,couponSwitch:1,signSwitch:1,wheelSwitch:1,wheelBarrage:1,
+  boxRewardShow:1,noviceSwitch:1,bbSwitch:1,bbBarrage:1,bxSwitch:1,jcSwitch:1};
+var MS_CFG_ACTS = {couponPubConfig:1,couponPubDetail:1,wheelConfig:1,wheelPubDetail:1,
+  clientConfig:1,adClientText:1,bbPubConfig:1,bbPubDetail:1,bxPubConfig:1,bxPubDetail:1,bxBreak:1};
+function msSyncBadge(){
+  var b = document.getElementById("msCount");
+  if(b) b.textContent = document.querySelectorAll(".msnew,.msi").length;
+}
+function msLegend(){
+  if(document.getElementById("msBar")) return;
+  var bar = el("div","msbar",""); bar.id = "msBar";
+  var hd = el("div","mshd","");
+  hd.appendChild(el("i","msdot",""));
+  hd.appendChild(el("span","mshdt","多站点新增标记"));
+  var cnt = el("span","mscnt","0"); cnt.id="msCount"; hd.appendChild(cnt);
+  var tg = el("button","mstg","隐藏"); tg.type="button";
+  tg.onclick = function(){
+    MS_ON = !MS_ON;
+    document.body.classList.toggle("msoff", !MS_ON);
+    tg.textContent = MS_ON ? "隐藏" : "显示";
+    bar.classList.toggle("mini", !MS_ON);
+  };
+  hd.appendChild(tg);
+  bar.appendChild(hd);
+  var ul = el("div","msls","");
+  ["C1","C2","C3","C4","C5","C6","C7"].forEach(function(c){
+    var r = el("div","msli","");
+    r.appendChild(el("b","mscode", c));
+    r.appendChild(el("span","", MS_NAMES[c]));
+    r.title = MS_TIPS[c];
+    ul.appendChild(r);
+  });
+  bar.appendChild(ul);
+  bar.appendChild(el("div","msft","红点处为本期多站点改造新增／改动的字段与组件，鼠标悬停查看规格"));
+  document.body.appendChild(bar);
+}
 var SITE_LIMITS = {"站点A":"500.00","站点B":"800.00","站点C":"1000.00","站点D":"300.00","站点E":"1500.00","站点F":"600.00"};
 var SITE_BIG = {"站点A":"300.00","站点B":"500.00","站点C":"800.00","站点D":"0","站点E":"1000.00","站点F":"200.00"};
 function taskGoalPanel(){
@@ -2270,6 +2390,7 @@ function mSiteTargetPicker(cfg){
       var sl = document.createElement("label");
       sl.appendChild(el("span","req","*"));
       sl.appendChild(document.createTextNode("归属站点："));
+      msMark(sl, "C7");
       sr.appendChild(sl);
       var ssel = mSelect(["请选择归属站点"].concat(SITE_LIST));
       ssel.classList.add("mrsitesel");
@@ -3571,7 +3692,7 @@ function openCouponPubConfig(tabRef){
   var siteVal = "站点A";
   var outer = el("div","","");
   var siteRow = mSiteRow(siteVal, function(sv){ readSite(); siteVal = sv; render(); toast("已切换到 "+sv+" 的公共配置"); });
-  siteRow.querySelector("label").lastChild.textContent = "关联站点：";
+  siteRow.querySelector("label").lastChild.textContent = "关联站点："; msMark(siteRow.querySelector("label"), "C5");
   outer.appendChild(siteRow);
   var host = el("div","","");
   outer.appendChild(host);
@@ -3720,7 +3841,7 @@ function openCouponPubDetail(tabRef){
   var siteVal = "站点A";
   var outer = el("div","","");
   var siteRow = mSiteRow(siteVal, function(sv){ siteVal = sv; render(); });
-  siteRow.querySelector("label").lastChild.textContent = "查看站点：";
+  siteRow.querySelector("label").lastChild.textContent = "查看站点："; msMark(siteRow.querySelector("label"), "C5");
   outer.appendChild(siteRow);
   var host = el("div","","");
   outer.appendChild(host);
@@ -3805,6 +3926,7 @@ function openWheelPubDetail(tabRef){
   addModalExpand();
 }
 function openSubModal(title, bodyEl, footButtons, widthCls){
+  setTimeout(function(){ msScan(document.getElementById("modalRoot")); }, 0);
   var root = document.getElementById("modalRoot");
   var mask = el("div","mask sub");
   mask.onclick = function(e){ if(e.target===mask) root.removeChild(mask); };
@@ -4023,7 +4145,7 @@ function openSiteSwitchModal(cfg){
   SITE_LIST.forEach(function(st){ if(store[st]===undefined) store[st] = (cfg.def===undefined?true:cfg.def); });
   var body = el("div","swwrap","");
   var box = el("div","bigbox","");
-  if(cfg.label) box.appendChild(el("div","biglabel", cfg.label));
+  if(cfg.label) msMark(box.appendChild(el("div","biglabel", cfg.label)), "C6");
   var inputs = {};
   SITE_LIST.forEach(function(site){
     var row = el("div","swrow","");
@@ -4609,6 +4731,7 @@ function mSiteRow(siteVal, onChange, locked){
   var lb = document.createElement("label");
   lb.appendChild(el("span","req","*"));
   lb.appendChild(document.createTextNode(locked?"归属站点：":"关联站点："));
+  msMark(lb, locked ? "C4" : "C3");
   r.appendChild(lb);
   var fc = el("div","fctrl","");
   var g = el("div","sitepick","");
@@ -5045,7 +5168,7 @@ function openBbPubConfig(tabRef){
   var siteVal = "站点A";
   var outer = el("div","","");
   var siteRow = mSiteRow(siteVal, function(sv){ readSite(); siteVal = sv; render(); toast("已切换到 "+sv+" 的盲盒公共配置"); });
-  siteRow.querySelector("label").lastChild.textContent = "关联站点：";
+  siteRow.querySelector("label").lastChild.textContent = "关联站点："; msMark(siteRow.querySelector("label"), "C5");
   outer.appendChild(siteRow);
   var host = el("div","",""); outer.appendChild(host);
   var CUR = null;
@@ -5203,7 +5326,7 @@ function openBbPubDetail(tabRef){
   var siteVal = "站点A";
   var outer = el("div","","");
   var siteRow = mSiteRow(siteVal, function(sv){ siteVal = sv; render(); });
-  siteRow.querySelector("label").lastChild.textContent = "查看站点：";
+  siteRow.querySelector("label").lastChild.textContent = "查看站点："; msMark(siteRow.querySelector("label"), "C5");
   outer.appendChild(siteRow);
   var host = el("div",""," "); host.innerHTML="";
   outer.appendChild(host);
@@ -5946,7 +6069,7 @@ function openBxPubConfig(tabRef){
   var siteVal = "站点A";
   var outer = el("div","","");
   var siteRow = mSiteRow(siteVal, function(sv){ readSite(); siteVal = sv; render(); toast("已切换到 "+sv+" 的利息宝公共配置"); });
-  siteRow.querySelector("label").lastChild.textContent = "关联站点：";
+  siteRow.querySelector("label").lastChild.textContent = "关联站点："; msMark(siteRow.querySelector("label"), "C5");
   outer.appendChild(siteRow);
   var host = el("div","",""); outer.appendChild(host);
   var CUR = null;
@@ -6074,7 +6197,7 @@ function openBxPubDetail(tabRef){
   var siteVal = "站点A";
   var outer = el("div","","");
   var siteRow = mSiteRow(siteVal, function(sv){ siteVal = sv; render(); });
-  siteRow.querySelector("label").lastChild.textContent = "查看站点：";
+  siteRow.querySelector("label").lastChild.textContent = "查看站点："; msMark(siteRow.querySelector("label"), "C5");
   outer.appendChild(siteRow);
   var host = el("div","",""); outer.appendChild(host);
   function render(){
@@ -6112,7 +6235,7 @@ function openBxBreak(tabRef){
   var siteVal = "站点A";
   var outer = el("div","","");
   var siteRow = mSiteRow(siteVal, function(sv){ read(); siteVal = sv; render(); toast("已切换到 "+sv+" 的中断文案"); });
-  siteRow.querySelector("label").lastChild.textContent = "关联站点：";
+  siteRow.querySelector("label").lastChild.textContent = "关联站点："; msMark(siteRow.querySelector("label"), "C5");
   outer.appendChild(siteRow);
   var host = el("div","bxbrk",""); outer.appendChild(host);
   var refs = {};
@@ -7307,6 +7430,7 @@ function jcJump(tabId, setter){
   selectTab(tabId);
 }
 initApp();
+msLegend(); msSyncBadge();
 </script>
 </body>
 </html>
