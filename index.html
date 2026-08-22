@@ -968,21 +968,39 @@ body.msoff .msnew::after{display:none !important;}
   vertical-align:super;margin-left:5px;box-shadow:0 0 0 2px rgba(255,77,79,.22);}
 body.msoff .msi{display:none !important;}
 
-.msbar{position:fixed;right:14px;bottom:14px;z-index:900;width:206px;opacity:.97;background:#fff;
-  border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 6px 22px rgba(15,23,42,.14);
-  font-size:12.5px;overflow:hidden;}
-.msbar .mshd{display:flex;align-items:center;gap:7px;padding:9px 11px;border-bottom:1px solid #eef0f3;background:#fafbfc;}
+.msbar{position:fixed;right:14px;bottom:14px;z-index:900;width:326px;background:#fff;
+  border:1px solid #e5e7eb;border-radius:9px;box-shadow:0 8px 28px rgba(15,23,42,.16);
+  font-size:12.5px;overflow:hidden;display:flex;flex-direction:column;max-height:min(56vh,560px);transition:max-height .15s;}
+.msbar .mshd{display:flex;align-items:center;gap:7px;padding:9px 11px;border-bottom:1px solid #eef0f3;background:#fafbfc;flex:0 0 auto;}
 .msbar .msdot{width:8px;height:8px;border-radius:50%;background:#ff4d4f;flex:0 0 auto;
   box-shadow:0 0 0 2px #fff,0 0 0 3px rgba(255,77,79,.28);}
 .msbar .mshdt{font-weight:bold;color:#1f2937;}
-.msbar .mscnt{margin-left:auto;background:#fff1f0;color:#cf1322;border-radius:9px;padding:1px 8px;font-weight:bold;}
-.msbar .mstg{border:1px solid #e5e7eb;background:#fff;border-radius:4px;padding:2px 8px;cursor:pointer;color:#555;font-size:12px;}
+.msbar .mscnt{background:#fff1f0;color:#cf1322;border-radius:9px;padding:1px 8px;font-weight:bold;}
+.msbar .mstg{margin-left:auto;border:1px solid #e5e7eb;background:#fff;border-radius:4px;padding:2px 7px;cursor:pointer;color:#555;font-size:11.5px;}
+.msbar .mstg + .mstg{margin-left:4px;padding:2px 6px;}
 .msbar .mstg:hover{color:var(--primary);border-color:var(--primary);}
-.msbar .msls{padding:7px 11px;display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;}
-.msbar .msli{display:flex;align-items:center;gap:5px;color:#555;cursor:help;white-space:nowrap;}
-.msbar .mscode{background:#eef4ff;color:#2b5fbe;border-radius:3px;padding:0 5px;font-size:11px;}
-.msbar .msft{padding:6px 11px 8px;color:#8a929c;line-height:1.55;border-top:1px solid #eef0f3;font-size:11.5px;}
-.msbar.mini .msls,.msbar.mini .msft{display:none;}
+.msbar .mssub{padding:6px 11px;color:#5a6472;background:#f7f9fc;border-bottom:1px solid #eef0f3;flex:0 0 auto;}
+.msbar .mslist{overflow-y:auto;flex:1 1 auto;padding:2px 0 4px;}
+.msbar .msgt{padding:8px 11px 4px;color:#8a929c;font-size:11.5px;font-weight:bold;letter-spacing:.4px;}
+.msbar .msrow{display:flex;gap:7px;align-items:flex-start;padding:6px 11px;border-left:2px solid transparent;}
+.msbar .msrow.act{cursor:pointer;}
+.msbar .msrow.act:hover{background:#f5f9ff;border-left-color:var(--primary);}
+.msbar .mscode{background:#eef4ff;color:#2b5fbe;border-radius:3px;padding:0 5px;font-size:11px;flex:0 0 auto;margin-top:1px;}
+.msbar .mstx{flex:1;min-width:0;}
+.msbar .msn{color:#1f2937;line-height:1.5;}
+.msbar .msd{color:#8a929c;font-size:11.5px;line-height:1.5;margin-top:1px;}
+.msbar .msgo{color:var(--primary);flex:0 0 auto;font-size:11.5px;margin-top:1px;opacity:0;}
+.msbar .msrow.act:hover .msgo{opacity:1;}
+.msbar .msempty{padding:14px 11px;color:#9aa1ab;text-align:center;}
+.msbar .msft{padding:7px 11px 8px;color:#8a929c;line-height:1.55;border-top:1px solid #eef0f3;font-size:11.5px;flex:0 0 auto;}
+.msbar.mini{max-height:none;width:auto;border-radius:20px;}
+.msbar.mini .mssub,.msbar.mini .mslist,.msbar.mini .msft{display:none;}
+.msbar.mini .mshd{border-bottom:none;background:#fff;padding:7px 12px;}
+.msbar.mini .mshdt{display:none;}
+.msbar .mshds{display:none;font-weight:bold;color:#1f2937;}
+.msbar.mini .mshds{display:inline;}
+.msbar.mini .mstg.hidebtn{display:none;}
+.msbar .mshd{cursor:pointer;}
 </style>
 </head>
 <body>
@@ -1056,7 +1074,7 @@ function renderTabbar(){
   return "tag off";
 }
 function renderContent(){
-  setTimeout(msSyncBadge, 0);
+  setTimeout(function(){ msSyncBadge(); msRenderList(); }, 0);
   var mod = findModule(STATE.curModule);
   var tab = findTab(mod, STATE.curTab);
   var box = document.getElementById("content"); box.innerHTML="";
@@ -2024,37 +2042,166 @@ var MS_SWITCH_ACTS = {mysticSwitch:1,couponSwitch:1,signSwitch:1,wheelSwitch:1,w
   boxRewardShow:1,noviceSwitch:1,bbSwitch:1,bbBarrage:1,bxSwitch:1,jcSwitch:1};
 var MS_CFG_ACTS = {couponPubConfig:1,couponPubDetail:1,wheelConfig:1,wheelPubDetail:1,
   clientConfig:1,adClientText:1,bbPubConfig:1,bbPubDetail:1,bxPubConfig:1,bxPubDetail:1,bxBreak:1};
+var MS_ADD_ACTS = {templatePicker:"添加活动",addGeneric:"添加",couponAdd:"添加折扣券",typeAdd:"添加类型",
+  redEnvAdd:"添加红包活动",boxAdd:"添加宝箱",mysticAdd:"添加神秘任务",adAdd:"添加广告",
+  bxAdd:"添加配置",jcAdd:"添加活动"};
+var MS_C7_ACTS = {manualRed:"手动发红包",luckyAdjust:"调整幸运值",activeAdjust:"调整活跃度",
+  bbAdjust:"调整抽奖次数",oneKeyDispatch:"一键派发"};
+var MS_LOCK_ACTS = {editRow:1,viewRow:1,rowDetail:1,activityEdit:1,activityDetail:1,
+  benefitDetail:1,orderDetail:1,couponEdit:1,typeEdit:1,redEnvEdit:1,boxEdit:1,mysticEdit:1,
+  wheelEdit:1,wheelDetail:1,adEdit:1,signEdit:1,taskGoalEdit:1,
+  bbEdit:1,bbDetail:1,bbOrderEdit:1,bbOrderDetail:1,
+  bxEdit:1,bxDetail:1,bxCopy:1,bxMore:1,bxPullback:1,
+  jcEdit:1,jcDetail:1,jcMatches:1,jcMore:1,jcOdDetail:1,jcStatDetail:1};
+var MS_LINK_ACTS = {bbDtFree:"免费总次数明细",bbDtExpired:"过期免费次数明细",bbDtRemain:"剩余免费次数明细",
+  bbDtBuy:"购买次数明细",bbDtGoods:"中奖实物明细",jcOrders:"投注注单列表",jcSource:"积分来源明细"};
+/* 弹窗深层／规则类新增，按 tabId 手工补充 */
+var MS_EXTRA = {
+  boxConfig:[
+    {c:"C5",at:"弹窗·盲盒公共配置",n:"热编辑判定按站点",d:"站点X 的总开关与单体开关只影响站点X 的可编辑范围"},
+    {c:"C2",at:"列表·数据量",n:"由 3 条改为 站点数 × 3 条",d:"每个站点各有一套小／中／大盲盒，同名类型跨站独立"},
+    {c:"C4",at:"弹窗·单体盲盒配置",n:"奖励「盲盒免费抽奖次数」",d:"可选盲盒类型只能是本站点下的小／中／大盲盒"},
+    {c:"C6",at:"弹窗·盲盒活动总开关",n:"开启校验限本站点",d:"校验该站点下是否至少开启一个单体盲盒"},
+    {c:"C4",at:"操作列·记录",n:"跳转传参扩展",d:"由「盲盒类型」扩展为「归属站点 + 盲盒类型」",act:"bbGoWin",row:true}
+  ],
+  boxMember:[
+    {c:"C7",at:"弹窗·调整抽奖次数",n:"导入模板新增「归属站点名称」列",d:"必填；按「站点名称 + 会员账号」双条件校验，三种情况拦截"},
+    {c:"C7",at:"弹窗·调整抽奖次数",n:"站内信按站点拆分",d:"按每个账号自身站点发送，同批数据拆为多条记录"},
+    {c:"C2",at:"列表·小计总计",n:"跨站汇总口径",d:"币种不同的站点需按站点分行展示，不做跨币种相加"},
+    {c:"C4",at:"操作列·记录",n:"跳转传参扩展",d:"由「会员账号」扩展为「归属站点 + 会员账号」",act:"bbGoWinAcct",row:true}
+  ],
+  boxStat:[{c:"C2",at:"定时任务",n:"统计任务按站点独立运行",d:"各站点总开关开启时间不同，统计区间可不一致；未开启的站点不产生数据行"}],
+  boxOrder:[{c:"C4",at:"弹窗·编辑发货资料",n:"归属站点后端兜底",d:"提交时以订单原有归属站点为准，前端传参被篡改也不生效"}],
+  bxConfig:[
+    {c:"C3",at:"弹窗·添加配置",n:"指定VIP等级互斥范围收敛",d:"由「全局互斥」改为「同站点内互斥」；切站需重新加载占用情况并清空已选"},
+    {c:"C5",at:"弹窗·中断设置",n:"中断文案按站点独立",d:"各站点可用不同语气／品牌名／默认语言；中断与手动拉回两个场景复用"},
+    {c:"C5",at:"弹窗·公共配置",n:"稽核方式按站点独立",d:"站点A 可选只稽核利息，站点B 可选稽核利息+本金，互不影响"},
+    {c:"C4",at:"操作列·复制",n:"关联站点可改选",d:"默认带入来源站点但允许改选；面向对象不带入（各站点清单不同）",act:"bxCopy",row:true},
+    {c:"C4",at:"状态开关·中断",n:"二次确认注明站点",d:"确认文案需带配置ID 与归属站点，中断仅影响本站点该配置"}
+  ],
+  bxMember:[
+    {c:"C4",at:"弹窗·手动拉回",n:"资金退回本站点余额",d:"不可指定退回其他站点；仅该会员在本站点的本期活动终止",act:"bxPullback",row:true},
+    {c:"C2",at:"定时任务",n:"每分钟更新按站点划分",d:"站点总开关关闭后该站点更新任务同时停止"}
+  ],
+  bxStat:[
+    {c:"C2",at:"定时任务",n:"统计任务按站点独立运行",d:"以「统计时间 + 归属站点 + 配置ID」为唯一维度"},
+    {c:"C4",at:"操作列·记录",n:"跳转传参扩展",d:"扩展为「归属站点 + 配置ID + 本行实际时间区间」",act:"bxGoDetail",row:true}
+  ],
+  jcConfig:[
+    {c:"C3",at:"弹窗·新增活动",n:"层级／VIP 随站点动态加载",d:"切换关联站点后需重新拉取该站点清单并清空已选值"},
+    {c:"C4",at:"弹窗·录入赛况",n:"赛事仅限本站点",d:"抬头展示归属站点；赛制互斥按配置维度，同站点不同配置可各用不同赛制"},
+    {c:"C4",at:"弹窗·修改赛事",n:"队伍清单取本站点",d:"赔率类型可按站点差异化（欧洲／香港／马来／印尼／美式盘）"},
+    {c:"C4",at:"弹窗·修正开奖结果",n:"重算范围限本站点",d:"补发／扣除仅作用于本站点该场注单；冲正单归属本站点"},
+    {c:"C4",at:"更多·复制",n:"关联站点可改选",d:"默认带入来源站点；面向对象不带入"},
+    {c:"C7",at:"更多·派奖",n:"发放对象新增必填「归属站点」",d:"建议锁定为被派奖活动的站点；导入模板新增站点名称列；复核人需同站点权限"},
+    {c:"C4",at:"更多·查看竞猜明细",n:"跳转传参扩展",d:"由「活动名称」扩展为「归属站点 + 活动名称」"}
+  ],
+  jcOrder:[{c:"C2",at:"列表·竞猜赔率",n:"跨站不可横向比较",d:"各站点盘口类型可不同，赔率数值与派奖公式随盘口而异"}],
+  jcMember:[{c:"C2",at:"列表·积分净盈亏",n:"不跨站轧差",d:"同一人在 A 站盈利、B 站亏损不可相抵；同名账号多行独立展示"}],
+  jcStat:[
+    {c:"C2",at:"列表·人数类字段",n:"跨站合计为人次口径",d:"同一人在多站参与会重复计入，不做跨站去重"},
+    {c:"C2",at:"列表·人均瓜分",n:"不参与合计",d:"应在各站点内分别计算，跨站求和或求平均无意义"}
+  ]
+};
+function msInventory(){
+  var mod = findModule(STATE.curModule); if(!mod) return [];
+  var tab = findTab(mod, STATE.curTab); if(!tab) return [];
+  var out = [];
+  (tab.filters||[]).forEach(function(f){
+    if(f.k==="site") out.push({c:"C1",at:"查询区",n:"「站点」下拉",d:"置于第一位；选项＝所有站点＋有权限站点；默认所有站点，选所有站点时跨站取数；重置回默认"});
+  });
+  (tab.columns||[]).forEach(function(c){
+    if(c.k==="site") out.push({c:"C2",at:"列表",n:"「归属站点」字段",d:"第一列 110px，只读，参与排序与导出，任何页签不得隐藏"});
+  });
+  (tab.toolbar||[]).forEach(function(b){
+    if(MS_SWITCH_ACTS[b.act]) out.push({c:"C6",at:"工具栏",n:b.l,d:"原页面单个开关改为按钮＋站点平铺弹窗，各站点独立，按站点拆分日志",act:b.act});
+    else if(MS_CFG_ACTS[b.act]) out.push({c:"C5",at:"工具栏",n:b.l,d:"每站点一套独立配置，切站执行「暂存 → 加载 → 重绘」，未配置站点用系统默认值",act:b.act});
+    else if(MS_ADD_ACTS[b.act]) out.push({c:"C3",at:"工具栏",n:b.l+" 弹窗",d:"首行新增「关联站点」平铺单选，必填，默认站点A，保存后即为归属站点且不可修改",act:b.act});
+    else if(MS_C7_ACTS[b.act]) out.push({c:"C7",at:"工具栏",n:b.l+" 弹窗",d:"派发对象区新增必填「归属站点」下拉（不含所有站点），按「站点＋账号」双条件校验",act:b.act});
+  });
+  (tab.columns||[]).forEach(function(c){
+    if(c.linkAct && MS_LINK_ACTS[c.linkAct])
+      out.push({c:"C2",at:"列表·"+c.l,n:MS_LINK_ACTS[c.linkAct],d:"点击数字打开的明细弹窗，统计区首位新增「归属站点」，明细仅限该站点",act:c.linkAct,row:true});
+  });
+  (tab.rowActions||[]).forEach(function(a){
+    if(MS_LOCK_ACTS[a.act]) out.push({c:"C4",at:"操作列",n:a.l+" 弹窗",d:"首行「归属站点」置灰只读＋灰字提示；取该行自身站点，不取查询区所选站点",act:a.act,row:true});
+  });
+  (MS_EXTRA[tab.id]||[]).forEach(function(e){ out.push(e); });
+  return out;
+}
 function msSyncBadge(){
   var b = document.getElementById("msCount");
-  if(b) b.textContent = document.querySelectorAll(".msnew,.msi").length;
+  /* 计数由 msRenderList 写入 */
 }
 function msLegend(){
   if(document.getElementById("msBar")) return;
   var bar = el("div","msbar",""); bar.id = "msBar";
   var hd = el("div","mshd","");
   hd.appendChild(el("i","msdot",""));
-  hd.appendChild(el("span","mshdt","多站点新增标记"));
+  hd.appendChild(el("span","mshdt","多站点新增清单"));
+  hd.appendChild(el("span","mshds","多站点新增"));
   var cnt = el("span","mscnt","0"); cnt.id="msCount"; hd.appendChild(cnt);
-  var tg = el("button","mstg","隐藏"); tg.type="button";
-  tg.onclick = function(){
+  var tg = el("button","mstg","隐藏点"); tg.type="button";
+  tg.onclick = function(e){
+    e.stopPropagation();
     MS_ON = !MS_ON;
     document.body.classList.toggle("msoff", !MS_ON);
-    tg.textContent = MS_ON ? "隐藏" : "显示";
-    bar.classList.toggle("mini", !MS_ON);
+    tg.textContent = MS_ON ? "隐藏点" : "显示点";
   };
   hd.appendChild(tg);
+  tg.className = "mstg hidebtn";
+  var fold = el("button","mstg","▴"); fold.type="button"; fold.title="展开／折叠清单";
+  function toggleFold(){
+    bar.classList.toggle("mini");
+    fold.textContent = bar.classList.contains("mini") ? "▴" : "▾";
+  }
+  fold.onclick = function(e){ e.stopPropagation(); toggleFold(); };
+  hd.onclick = function(){ if(bar.classList.contains("mini")) toggleFold(); };
+  hd.appendChild(fold);
+  bar.classList.add("mini");
   bar.appendChild(hd);
-  var ul = el("div","msls","");
-  ["C1","C2","C3","C4","C5","C6","C7"].forEach(function(c){
-    var r = el("div","msli","");
-    r.appendChild(el("b","mscode", c));
-    r.appendChild(el("span","", MS_NAMES[c]));
-    r.title = MS_TIPS[c];
-    ul.appendChild(r);
-  });
-  bar.appendChild(ul);
-  bar.appendChild(el("div","msft","红点处为本期多站点改造新增／改动的字段与组件，鼠标悬停查看规格"));
+  var sub = el("div","mssub",""); sub.id="msSub";
+  bar.appendChild(sub);
+  var list = el("div","mslist",""); list.id="msList";
+  bar.appendChild(list);
+  bar.appendChild(el("div","msft","红点＝本期多站点改造新增／改动处。点击清单条目可直接打开对应弹窗；悬停查看规格。"));
   document.body.appendChild(bar);
+}
+function msRenderList(){
+  var box = document.getElementById("msList"); if(!box) return;
+  var mod = findModule(STATE.curModule), tab = mod && findTab(mod, STATE.curTab);
+  var sub = document.getElementById("msSub");
+  if(sub) sub.textContent = (mod?mod.label:"") + (tab?(" › "+tab.label):"");
+  box.innerHTML = "";
+  var items = msInventory();
+  var b = document.getElementById("msCount"); if(b) b.textContent = items.length;
+  if(!items.length){ box.appendChild(el("div","msempty","本页签无多站点改动")); return; }
+  var groups = {}, order = [];
+  items.forEach(function(it){ if(!groups[it.at]){ groups[it.at]=[]; order.push(it.at); } groups[it.at].push(it); });
+  order.forEach(function(g){
+    box.appendChild(el("div","msgt", g));
+    groups[g].forEach(function(it){
+      var r = el("div","msrow"+(it.act?" act":""),"");
+      r.appendChild(el("b","mscode", it.c));
+      var tx = el("div","mstx","");
+      tx.appendChild(el("div","msn", it.n));
+      tx.appendChild(el("div","msd", it.d));
+      r.appendChild(tx);
+      r.title = "【"+it.c+" "+MS_NAMES[it.c]+"】"+it.d;
+      if(it.act){
+        r.appendChild(el("span","msgo","打开 ›"));
+        r.onclick = function(){
+          var m = findModule(STATE.curModule), t = m && findTab(m, STATE.curTab);
+          if(!t) return;
+          if(it.row){
+            if(!t.rows || !t.rows.length){ toast("当前页签无数据，无法打开该弹窗"); return; }
+            dispatch(t, it.act, 0);
+          } else { dispatch(t, it.act, null); }
+        };
+      }
+      box.appendChild(r);
+    });
+  });
 }
 var SITE_LIMITS = {"站点A":"500.00","站点B":"800.00","站点C":"1000.00","站点D":"300.00","站点E":"1500.00","站点F":"600.00"};
 var SITE_BIG = {"站点A":"300.00","站点B":"500.00","站点C":"800.00","站点D":"0","站点E":"1000.00","站点F":"200.00"};
@@ -7430,7 +7577,7 @@ function jcJump(tabId, setter){
   selectTab(tabId);
 }
 initApp();
-msLegend(); msSyncBadge();
+msLegend(); msRenderList();
 </script>
 </body>
 </html>
