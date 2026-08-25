@@ -1,0 +1,614 @@
+<title>竞猜活动 PC 原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ground:#eceef1;
+  --surface:#ffffff;
+  --surface-2:#f7f8fa;
+  --line:#e4e7ec;
+  --line-strong:#d3d8e0;
+  --ink:#1e2026;
+  --ink-2:#565b66;
+  --ink-3:#8f949f;
+  --brand:#e2262b;
+  --brand-dark:#bd171c;
+  --brand-soft:#fdeced;
+  --amber:#f5a623;
+  --blue:#1a7ee5;
+  --blue-dark:#1668bd;
+  --blue-soft:#e9f3fd;
+  --shell-h:56px;
+  --rail-w:48px;
+  --radius:6px;
+  font-synthesis-weight:none;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  font-size:14px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.num{font-family:"Barlow","Noto Sans SC",sans-serif;font-variant-numeric:tabular-nums}
+
+/* ---------- shell ---------- */
+.rail{
+  position:fixed;left:0;top:0;bottom:0;width:var(--rail-w);
+  background:var(--surface);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;gap:14px;padding:14px 0;z-index:30;
+}
+.rail-btn{width:28px;height:28px;border-radius:6px;display:grid;place-items:center;font-size:15px;background:var(--surface-2)}
+.rail-btn.menu{background:none;font-size:18px;color:var(--ink-2)}
+.page{margin-left:var(--rail-w)}
+
+.header{background:var(--surface);border-bottom:1px solid var(--line)}
+.header-in{max-width:1280px;margin:0 auto;padding:0 24px;height:var(--shell-h);display:flex;align-items:center;gap:28px}
+.logo{font-family:"Barlow",sans-serif;font-weight:700;font-size:26px;letter-spacing:.5px;color:var(--brand)}
+.quick{display:flex;align-items:center;gap:18px;color:var(--ink-2);font-size:13px;margin-left:8px}
+.quick span{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.dot{width:14px;height:14px;border-radius:4px;background:var(--brand-soft);display:inline-block}
+.acct{margin-left:auto;display:flex;align-items:center;gap:12px}
+.btn-brand{background:var(--brand);color:#fff;font-weight:500;padding:7px 26px;border-radius:var(--radius)}
+.btn-brand:hover{background:var(--brand-dark)}
+.balance{font-family:"Barlow",sans-serif;font-weight:600;font-size:15px;font-variant-numeric:tabular-nums}
+.balance small{color:var(--ink-3);font-weight:500;margin-right:4px}
+.user{display:flex;flex-direction:column;align-items:flex-end;line-height:1.3}
+.user b{font-weight:500;font-size:13px}
+.user span{color:var(--ink-3);font-size:12px;font-family:"Barlow",sans-serif}
+.bell{position:relative;width:30px;height:30px;border-radius:6px;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:12px;font-family:"Barlow",sans-serif;font-weight:600}
+
+.nav{background:var(--surface);border-bottom:1px solid var(--line);box-shadow:0 1px 3px rgba(30,32,38,.05)}
+.nav-in{max-width:1280px;margin:0 auto;padding:0 24px;display:flex;justify-content:center;gap:2px}
+.nav a{padding:11px 20px;font-size:14px;color:var(--ink-2);text-decoration:none;display:flex;align-items:center;gap:6px;border-radius:4px 4px 0 0}
+.nav a:hover{color:var(--brand)}
+.nav a.on{background:var(--brand);color:#fff}
+
+/* ---------- content ---------- */
+.main{max-width:1280px;margin:0 auto;padding:22px 24px 40px}
+.crumb{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.crumb h1{margin:0;font-size:18px;font-weight:700}
+.crumb .sub{color:var(--ink-3);font-size:13px}
+.crumb .tools{margin-left:auto;display:flex;gap:10px}
+.icon-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--brand);color:var(--brand);display:grid;place-items:center;font-size:14px;background:var(--surface)}
+.icon-btn.solid{background:var(--brand);border-color:var(--brand);color:#fff}
+.icon-btn:hover{background:var(--brand);color:#fff}
+
+.split{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;align-items:start}
+
+/* list column */
+.col-list{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;position:sticky;top:16px}
+.col-head{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.col-head h2{margin:0;font-size:14px;font-weight:700}
+.col-head .count{color:var(--ink-3);font-size:12px;font-family:"Barlow",sans-serif}
+.list{max-height:calc(100vh - 190px);overflow-y:auto}
+.card{padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer;border-left:3px solid transparent;transition:background .15s,border-color .15s}
+.card:hover{background:var(--surface-2)}
+.card.on{background:var(--brand-soft);border-left-color:var(--brand)}
+.card h3{margin:0 0 10px;font-size:14px;font-weight:500;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.stat b{display:block;font-family:"Barlow",sans-serif;font-weight:600;font-size:15px;color:var(--blue);font-variant-numeric:tabular-nums;line-height:1.3}
+.stat b.small{font-size:12.5px;font-weight:500}
+.stat span{color:var(--ink-3);font-size:11.5px}
+.card-foot{display:flex;align-items:center;gap:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--ink-2)}
+.card-foot .num{color:var(--ink);font-weight:600}
+.join{margin-left:auto;background:var(--blue);color:#fff;font-size:12px;padding:5px 14px;border-radius:4px}
+.join:hover{background:var(--blue-dark)}
+.card.on .join{background:var(--brand)}
+
+/* detail column */
+.col-detail{display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.prize{display:grid;grid-template-columns:1.1fr 1fr;gap:0}
+.prize > div{padding:20px 24px}
+.prize .left{border-right:1px solid var(--line);text-align:center}
+.label{color:var(--ink-3);font-size:12.5px;letter-spacing:.04em}
+.money{font-family:"Barlow",sans-serif;font-weight:700;font-size:38px;color:var(--amber);line-height:1.15;font-variant-numeric:tabular-nums}
+.draw{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:5px 16px;border:1px solid var(--line-strong);border-radius:999px;font-size:12.5px;color:var(--ink-2)}
+.prize .right{display:flex;flex-direction:column;justify-content:center;gap:4px}
+.score{display:flex;align-items:baseline;gap:10px}
+.score b{font-family:"Barlow",sans-serif;font-weight:700;font-size:28px;color:var(--amber);font-variant-numeric:tabular-nums}
+.score-note{color:var(--ink-3);font-size:12.5px}
+.score-note em{font-style:normal;color:var(--brand);font-weight:500}
+.mine{display:flex;gap:26px;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);flex-wrap:wrap}
+.mine div span{display:block;color:var(--ink-3);font-size:12px;white-space:nowrap}
+.mine div b{font-family:"Barlow",sans-serif;font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.tabs{display:flex;gap:8px;padding:14px 20px 0}
+.tab{padding:7px 26px;border-radius:4px;background:var(--surface-2);color:var(--ink-2);font-size:13px}
+.tab.on{background:var(--blue);color:#fff}
+.rounds{padding:14px 20px 20px;display:flex;flex-direction:column;gap:12px}
+.match{display:grid;grid-template-columns:minmax(0,1fr) 300px 120px;gap:20px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:14px 18px;background:var(--surface)}
+.match:hover{border-color:var(--line-strong)}
+.teams{display:flex;align-items:center;gap:18px}
+.team{display:flex;flex-direction:column;align-items:center;gap:6px;width:88px}
+.crest{width:46px;height:46px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-3);font-size:11px}
+.team span{font-size:12.5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px}
+.vs{display:flex;flex-direction:column;align-items:center;gap:2px}
+.vs b{font-family:"Barlow",sans-serif;font-size:19px;color:var(--ink-2);letter-spacing:1px}
+.vs span{font-size:11.5px;color:var(--ink-3);font-family:"Barlow",sans-serif}
+.odds{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.odd{border:1px solid var(--line-strong);border-radius:4px;padding:8px 4px;text-align:center;background:var(--surface);transition:.15s}
+.odd small{display:block;font-size:11.5px;color:var(--ink-3)}
+.odd b{font-family:"Barlow",sans-serif;font-size:14px;font-variant-numeric:tabular-nums}
+.odd:hover{border-color:var(--blue);color:var(--blue)}
+.odd.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.odd.on small{color:rgba(255,255,255,.8)}
+.bet{background:var(--blue);color:#fff;padding:10px 0;border-radius:4px;width:100%;font-size:14px}
+.bet:hover{background:var(--blue-dark)}
+.bet[disabled]{background:var(--line-strong);cursor:not-allowed}
+.locked{text-align:center;font-size:12px;color:var(--ink-3);border:1px dashed var(--line-strong);border-radius:4px;padding:9px 0}
+
+.rules{padding:20px 24px}
+.rules h4{margin:0 0 6px;font-size:14px;font-weight:700}
+.rules h4 + p{margin:0 0 18px;color:var(--ink-2);font-family:"Barlow","Noto Sans SC",sans-serif;font-size:13px}
+.rules ol{margin:0;padding-left:20px;color:var(--ink-2);display:flex;flex-direction:column;gap:10px;max-width:70ch}
+.rules ol li::marker{color:var(--brand);font-weight:700}
+
+/* ---------- modals ---------- */
+.overlay{position:fixed;inset:0;background:rgba(20,22,28,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:24px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:10px;width:100%;max-width:760px;max-height:86vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(20,22,28,.28)}
+.modal.sm{max-width:420px}
+.modal-head{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.modal-head h3{margin:0;font-size:15px;font-weight:700}
+.close{margin-left:auto;width:26px;height:26px;border-radius:50%;background:var(--surface-2);color:var(--ink-2);display:grid;place-items:center}
+.close:hover{background:var(--brand);color:#fff}
+.rtabs{display:flex;gap:26px;padding:0 20px;border-bottom:1px solid var(--line)}
+.rtab{padding:12px 0;font-size:13.5px;color:var(--ink-2);border-bottom:2px solid transparent}
+.rtab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:500}
+.filter{display:flex;gap:10px;padding:16px 20px}
+.range{flex:1;display:flex;align-items:center;gap:8px;border:1px solid var(--line-strong);border-radius:4px;padding:8px 12px;font-family:"Barlow",sans-serif;color:var(--ink-2);font-size:13px}
+.range input{border:0;font:inherit;color:inherit;width:96px;background:none}
+.search{width:38px;border:1px solid var(--line-strong);border-radius:4px;color:var(--ink-2)}
+.search:hover{background:var(--surface-2)}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:56px 20px 70px;color:var(--ink-3)}
+.empty svg{opacity:.5}
+.rows{padding:0 20px 20px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.row{display:grid;grid-template-columns:1fr auto;gap:4px 16px;border:1px solid var(--line);border-radius:6px;padding:11px 14px}
+.row b{font-weight:500;font-size:13.5px}
+.row .t{color:var(--ink-3);font-size:12px;font-family:"Barlow",sans-serif;grid-column:1}
+.row .v{grid-row:1 / span 2;align-self:center;font-family:"Barlow",sans-serif;font-weight:600;font-variant-numeric:tabular-nums}
+.row .v.up{color:#12a05c}
+.row .v.down{color:var(--brand)}
+.bet-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.pick{background:var(--surface-2);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--ink-2);display:flex;flex-direction:column;gap:4px}
+.pick b{color:var(--ink);font-size:14px}
+.field label{display:block;font-size:12.5px;color:var(--ink-3);margin-bottom:6px}
+.field input{width:100%;border:1px solid var(--line-strong);border-radius:4px;padding:10px 12px;font:inherit;font-family:"Barlow",sans-serif;font-size:15px}
+.chips{display:flex;gap:8px;margin-top:8px}
+.chip{border:1px solid var(--line-strong);border-radius:999px;padding:4px 12px;font-size:12px;font-family:"Barlow",sans-serif;color:var(--ink-2)}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.modal-foot{padding:0 20px 20px;display:flex;gap:10px}
+.modal-foot button{flex:1;padding:11px 0;border-radius:4px;font-size:14px}
+.ghost{border:1px solid var(--line-strong);color:var(--ink-2)}
+.ghost:hover{background:var(--surface-2)}
+.toast{position:fixed;left:50%;bottom:40px;transform:translate(-50%,20px);background:rgba(30,32,38,.92);color:#fff;padding:10px 22px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:80}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- footer ---------- */
+.footer{background:linear-gradient(180deg,#fff 0%,#fdf0f1 100%);border-top:1px solid var(--line);margin-top:36px;padding:28px 24px 22px;text-align:center}
+.footer .amb{color:var(--ink-2);font-size:13px;font-weight:500}
+.amb-card{width:86px;height:104px;margin:12px auto 6px;border:1px solid var(--line);border-radius:4px;background:var(--surface-2);display:grid;place-items:center;color:var(--ink-3);font-size:11px}
+.footer .name{font-size:12px;color:var(--ink-2);font-family:"Barlow",sans-serif}
+.partners{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:20px auto 14px;max-width:900px}
+.partners span{border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:5px 10px;font-size:10.5px;color:var(--ink-3);font-family:"Barlow",sans-serif;letter-spacing:.03em}
+.flinks{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 16px;font-size:12px;color:var(--ink-2)}
+.flinks span{white-space:nowrap}
+.copy{margin-top:8px;font-size:11.5px;color:var(--ink-3);font-family:"Barlow",sans-serif}
+
+@media (max-width:1120px){
+  .split{grid-template-columns:1fr}
+  .col-list{position:static}
+  .list{max-height:340px}
+  .match{grid-template-columns:1fr;gap:14px}
+}
+</style>
+
+<div class="rail">
+  <button class="rail-btn menu" aria-label="展开菜单">☰</button>
+  <span class="rail-btn">🎰</span>
+  <span class="rail-btn">🃏</span>
+  <span class="rail-btn">🐟</span>
+  <span class="rail-btn">🏆</span>
+  <span class="rail-btn">🔥</span>
+  <span class="rail-btn">🎯</span>
+  <span class="rail-btn">🎲</span>
+</div>
+
+<div class="page">
+  <header class="header">
+    <div class="header-in">
+      <div class="logo">OK8386</div>
+      <nav class="quick">
+        <span><i class="dot"></i>任务中心</span>
+        <span><i class="dot"></i>红包</span>
+        <span><i class="dot"></i>签到</span>
+        <span><i class="dot"></i>代理</span>
+        <span><i class="dot"></i>下载APP</span>
+        <span><i class="dot"></i>VIP</span>
+      </nav>
+      <div class="acct">
+        <button class="btn-brand">存款</button>
+        <button class="btn-brand">提款</button>
+        <div class="balance"><small>VND</small>100,100,011.04</div>
+        <div class="user"><b>quentin</b><span id="clock">11:01:41 (GMT+8)</span></div>
+        <div class="bell">7</div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="nav">
+    <div class="nav-in">
+      <a href="#">首页</a><a href="#">真人</a><a href="#">捕鱼</a><a href="#">老虎机</a>
+      <a href="#">棋牌</a><a href="#">斗鸡</a><a href="#">体育</a><a href="#">彩票</a>
+      <a href="#">电竞</a><a href="#" class="on">活动</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="crumb">
+      <h1>竞猜活动</h1>
+      <span class="sub">首页快捷导航 / 会员中心 均可进入</span>
+      <div class="tools">
+        <button class="icon-btn" id="openRecords" title="记录">▤</button>
+        <button class="icon-btn solid" id="closeAct" title="返回活动大厅">✕</button>
+      </div>
+    </div>
+
+    <div class="split">
+      <!-- 左：竞猜列表 -->
+      <section class="col-list">
+        <div class="col-head">
+          <h2>竞猜列表</h2>
+          <span class="count" id="listCount">4 个进行中</span>
+        </div>
+        <div class="list" id="list"></div>
+      </section>
+
+      <!-- 右：活动详情 -->
+      <section class="col-detail">
+        <div class="panel">
+          <div class="prize">
+            <div class="left">
+              <div class="label">奖金总额</div>
+              <div class="money" id="dPrize">¥1,288.00</div>
+              <div class="draw">🕐 <span class="num" id="dDraw">2026年9月12日 12:00:00</span> 抽奖</div>
+            </div>
+            <div class="right">
+              <div class="label">你的得分</div>
+              <div class="score"><b id="dScore">123123</b></div>
+              <div class="score-note" id="dScoreNote">登录即可每日领取 <em>123,123</em> 积分。</div>
+              <div class="mine">
+                <div><span>可投注积分</span><b id="dPoint">123123</b></div>
+                <div><span>可投注场次</span><b id="dOpen">4 场</b></div>
+                <div><span>总场次</span><b id="dTotal">8 场</b></div>
+                <div><span>结束时间</span><b id="dEnd">2029-09-08 12:23:33</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="tabs" id="tabs"></div>
+          <div class="rounds" id="rounds"></div>
+        </div>
+
+        <div class="panel rules">
+          <h4>【事件时间】</h4>
+          <p id="dEvent">2026年1月8日 00:00:00 - 2026年8月8日 23:59:59</p>
+          <h4>【活动描述】</h4>
+          <ol>
+            <li id="rule1">活动期间，您每日参与即可获得 123,123 积分（未参与活动将不获取积分）。您可以使用这些积分进行投注并赢取更多积分。</li>
+            <li>投注仅限赛前进行，且只能选择胜、负、平三种结果之一，不可选择多个结果。比赛开始后投注将立即关闭。</li>
+            <li id="rule3">本次活动的总奖金为 1,288。截至抽奖日，您的积分越多，奖金越高。计算公式为：个人奖金 = 总奖金 ÷ 全网总积分 × 个人有效积分。</li>
+          </ol>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="amb">品牌大使</div>
+    <div class="amb-card">Ronaldinho</div>
+    <div class="name">Ronaldinho 2025 - 2026</div>
+    <div class="partners">
+      <span>SSL SECURE</span><span>GAMCARE</span><span>BeGambleAware</span><span>WW</span>
+      <span>bmm TESTLABS</span><span>iTech Labs</span><span>GLI</span><span>18+</span>
+      <span>Facebook</span><span>Telegram</span><span>Messenger</span><span>QR</span>
+      <span>YouTube</span><span>Instagram</span><span>Email</span>
+    </div>
+    <div class="flinks">
+      <span>中文新增</span><span>中文</span><span>okpay</span><span>tttvn2</span>
+      <span>tttvn3</span><span>ROCKY TEST zh cn</span><span>TOO LONG TOO LONG TOO LONG</span>
+    </div>
+    <div class="copy">Copyright ©2024-2026 OK8386 版权所有</div>
+  </footer>
+</div>
+
+<!-- 记录弹窗 -->
+<div class="overlay" id="recordsModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>记录</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="rtabs" id="rtabs">
+      <button class="rtab on">钱包记录</button>
+      <button class="rtab">投注记录</button>
+      <button class="rtab">存款记录</button>
+      <button class="rtab">提款记录</button>
+    </div>
+    <div class="filter">
+      <div class="range">📅 <input value="2026-08-07"> — <input value="2026-08-07"></div>
+      <button class="search">🔍</button>
+    </div>
+    <div id="recordsBody"></div>
+  </div>
+</div>
+
+<!-- 下注弹窗 -->
+<div class="overlay" id="betModal">
+  <div class="modal sm">
+    <div class="modal-head">
+      <h3>下注</h3>
+      <button class="close" data-close>✕</button>
+    </div>
+    <div class="bet-body">
+      <div class="pick">
+        <b id="betMatch">主队 VS 客队</b>
+        <span id="betTime">07/09 00:00 · 半决赛</span>
+        <span>我的选择：<b id="betPick">主胜 2.00</b></span>
+      </div>
+      <div class="field">
+        <label>投注积分（可用 123,123）</label>
+        <input class="num" id="betAmount" value="1000">
+        <div class="chips">
+          <button class="chip" data-amt="1000">1000</button>
+          <button class="chip" data-amt="5000">5000</button>
+          <button class="chip" data-amt="10000">10000</button>
+          <button class="chip" data-amt="123123">全部</button>
+        </div>
+      </div>
+      <div class="pick">预计可得积分 <b id="betReturn">2,000</b></div>
+    </div>
+    <div class="modal-foot">
+      <button class="ghost" data-close>取消</button>
+      <button class="btn-brand" id="betConfirm">确认下注</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ACTIVITIES = [
+  {name:"欧洲杯竞猜活动 · 半决赛与决赛免费竞猜", prize:"¥1,288.00", point:"123123", end:"2029-09-08 12:23:33",
+   open:4, total:8, draw:"2026年9月12日 12:00:00", score:"123123",
+   note:'登录即可每日领取 <em>123,123</em> 积分。',
+   event:"2026年1月8日 00:00:00 - 2026年8月8日 23:59:59", prizeText:"1,288",
+   rule1:"活动期间，您每日参与即可获得 123,123 积分（未参与活动将不获取积分）。您可以使用这些积分进行投注并赢取更多积分。",
+   rounds:[
+     {name:"半决赛", matches:[
+       {a:"主队",b:"客队",time:"07/09 00:00",odds:["主胜","平局","客胜"],v:["2.00","2.00","2.00"],open:true},
+       {a:"队伍名称",b:"队伍名称",time:"07/09 00:00",odds:["赔率","平局","赔率"],v:["2.00","2.00","2.00"],open:true}
+     ]},
+     {name:"决赛", matches:[
+       {a:"待定",b:"待定",time:"07/12 00:00",odds:["主胜","平局","客胜"],v:["2.00","2.00","2.00"],open:true}
+     ]}
+   ]},
+  {name:"世界杯小组赛竞猜 · 充值得积分", prize:"¥688.00", point:"123123", end:"2029-09-08 12:23:33",
+   open:4, total:8, draw:"2026年9月12日 12:00:00", score:"123123",
+   note:'每充值 1000 VND 即可获得 <em>1</em> 积分。',
+   event:"2026年2月1日 00:00:00 - 2026年9月1日 23:59:59", prizeText:"688",
+   rule1:"活动期间，您每充值 1000 VND 即可获得 1 积分（未充值将不获取积分）。您可以使用这些积分进行投注并赢取更多积分。",
+   rounds:[
+     {name:"小组赛", matches:[
+       {a:"队伍名称",b:"队伍名称",time:"07/10 20:00",odds:["主胜","平局","客胜"],v:["1.85","3.20","4.10"],open:true},
+       {a:"队伍名称",b:"队伍名称",time:"07/10 22:30",odds:["主胜","平局","客胜"],v:["2.40","3.00","2.75"],open:false}
+     ]},
+     {name:"淘汰赛", matches:[
+       {a:"待定",b:"待定",time:"07/15 20:00",odds:["主胜","平局","客胜"],v:["2.00","2.00","2.00"],open:true}
+     ]}
+   ]},
+  {name:"英超冠军竞猜 · 投注得积分", prize:"¥349.98", point:"123123", end:"2029-09-08 12:23:33",
+   open:4, total:8, draw:"2026年9月12日 12:00:00", score:"123123",
+   note:'每投注 1000 VND 即可获得 <em>1</em> 积分。',
+   event:"2026年3月1日 00:00:00 - 2026年10月1日 23:59:59", prizeText:"349.98",
+   rule1:"活动期间，您每投注 1000 VND 即可获得 1 积分（未投注将不获取积分）。您可以使用这些积分进行投注并赢取更多积分。",
+   rounds:[
+     {name:"第 1 轮", matches:[
+       {a:"队伍名称",b:"队伍名称",time:"08/02 21:00",odds:["主胜","平局","客胜"],v:["1.72","3.40","4.60"],open:true}
+     ]},
+     {name:"第 2 轮", matches:[
+       {a:"队伍名称",b:"队伍名称",time:"08/09 21:00",odds:["主胜","平局","客胜"],v:["2.10","3.10","3.30"],open:true}
+     ]}
+   ]},
+  {name:"电竞总决赛竞猜 · 免费参与", prize:"¥2,000.00", point:"123123", end:"2029-09-08 12:23:33",
+   open:4, total:8, draw:"2026年9月12日 12:00:00", score:"123123",
+   note:'登录即可每日领取 <em>123,123</em> 积分。',
+   event:"2026年1月8日 00:00:00 - 2026年8月8日 23:59:59", prizeText:"2,000",
+   rule1:"活动期间，您每日参与即可获得 123,123 积分（未参与活动将不获取积分）。您可以使用这些积分进行投注并赢取更多积分。",
+   rounds:[
+     {name:"胜者组", matches:[
+       {a:"队伍名称",b:"队伍名称",time:"07/20 18:00",odds:["主胜","平局","客胜"],v:["1.95","3.60","3.05"],open:true}
+     ]},
+     {name:"总决赛", matches:[
+       {a:"待定",b:"待定",time:"07/28 18:00",odds:["主胜","平局","客胜"],v:["2.00","2.00","2.00"],open:false}
+     ]}
+   ]}
+];
+
+let cur = 0, curRound = 0;
+const picks = {};   // "活动-轮次-场次" -> 选项索引
+const $ = s => document.querySelector(s);
+
+function renderList(){
+  $("#list").innerHTML = ACTIVITIES.map((a,i)=>`
+    <div class="card ${i===cur?'on':''}" data-i="${i}">
+      <h3>${a.name}</h3>
+      <div class="stats">
+        <div class="stat"><b>${a.prize}</b><span>奖金总额</span></div>
+        <div class="stat"><b>${a.point}</b><span>可投注积分</span></div>
+        <div class="stat"><b class="small">${a.end}</b><span>结束时间</span></div>
+      </div>
+      <div class="card-foot">
+        <span>可投注场次：<i class="num">${a.open}</i> 场</span>
+        <span>总场次：<i class="num">${a.total}</i></span>
+        <button class="join">免费竞猜</button>
+      </div>
+    </div>`).join("");
+  $("#listCount").textContent = ACTIVITIES.length + " 个进行中";
+}
+
+function renderDetail(){
+  const a = ACTIVITIES[cur];
+  $("#dPrize").textContent = a.prize;
+  $("#dDraw").textContent = a.draw;
+  $("#dScore").textContent = a.score;
+  $("#dScoreNote").innerHTML = a.note;
+  $("#dPoint").textContent = a.point;
+  $("#dOpen").textContent = a.open + " 场";
+  $("#dTotal").textContent = a.total + " 场";
+  $("#dEnd").textContent = a.end;
+  $("#dEvent").textContent = a.event;
+  $("#rule1").textContent = a.rule1;
+  $("#rule3").textContent = `本次活动的总奖金为 ${a.prizeText}。截至抽奖日，您的积分越多，奖金越高。计算公式为：个人奖金 = 总奖金 ÷ 全网总积分 × 个人有效积分。`;
+  $("#tabs").innerHTML = a.rounds.map((r,i)=>
+    `<button class="tab ${i===curRound?'on':''}" data-r="${i}">${r.name}</button>`).join("");
+  renderRounds();
+}
+
+function renderRounds(){
+  const a = ACTIVITIES[cur], r = a.rounds[curRound];
+  $("#rounds").innerHTML = r.matches.map((m,mi)=>{
+    const key = `${cur}-${curRound}-${mi}`, sel = picks[key];
+    return `<div class="match" data-m="${mi}">
+      <div class="teams">
+        <div class="team"><div class="crest">队徽</div><span>${m.a}</span></div>
+        <div class="vs"><b>VS</b><span>${m.time}</span></div>
+        <div class="team"><div class="crest">队徽</div><span>${m.b}</span></div>
+      </div>
+      <div class="odds">${m.odds.map((o,oi)=>
+        `<button class="odd ${sel===oi?'on':''} ${m.open?'':'off'}" data-o="${oi}" ${m.open?'':'disabled'}>
+           <small>${o}</small><b>${m.v[oi]}</b></button>`).join("")}
+      </div>
+      ${m.open
+        ? `<button class="bet" data-bet="${mi}" ${sel===undefined?'disabled':''}>下注</button>`
+        : `<div class="locked">已封盘</div>`}
+    </div>`;
+  }).join("");
+}
+
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 1800);
+}
+
+// 列表切换
+$("#list").addEventListener("click", e=>{
+  const card = e.target.closest(".card"); if(!card) return;
+  cur = +card.dataset.i; curRound = 0;
+  renderList(); renderDetail();
+  if(e.target.closest(".join")) toast("已参与「" + ACTIVITIES[cur].name.split(" ")[0] + "」");
+});
+
+// 轮次切换
+$("#tabs").addEventListener("click", e=>{
+  const t = e.target.closest(".tab"); if(!t) return;
+  curRound = +t.dataset.r;
+  document.querySelectorAll("#tabs .tab").forEach(x=>x.classList.toggle("on", x===t));
+  renderRounds();
+});
+
+// 赔率选择 + 下注
+$("#rounds").addEventListener("click", e=>{
+  const odd = e.target.closest(".odd");
+  if(odd && !odd.disabled){
+    const mi = +odd.closest(".match").dataset.m;
+    picks[`${cur}-${curRound}-${mi}`] = +odd.dataset.o;
+    renderRounds();
+    return;
+  }
+  const bet = e.target.closest(".bet");
+  if(bet && !bet.disabled) openBet(+bet.dataset.bet);
+});
+
+function openBet(mi){
+  const a = ACTIVITIES[cur], r = a.rounds[curRound], m = r.matches[mi];
+  const sel = picks[`${cur}-${curRound}-${mi}`];
+  $("#betMatch").textContent = `${m.a} VS ${m.b}`;
+  $("#betTime").textContent = `${m.time} · ${r.name}`;
+  $("#betPick").textContent = `${m.odds[sel]} ${m.v[sel]}`;
+  $("#betModal").dataset.odd = m.v[sel];
+  calcReturn();
+  $("#betModal").classList.add("open");
+}
+function calcReturn(){
+  const amt = parseFloat($("#betAmount").value) || 0;
+  const odd = parseFloat($("#betModal").dataset.odd) || 0;
+  $("#betReturn").textContent = Math.round(amt*odd).toLocaleString();
+}
+$("#betAmount").addEventListener("input", calcReturn);
+document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{
+  $("#betAmount").value = c.dataset.amt; calcReturn();
+}));
+$("#betConfirm").addEventListener("click", ()=>{
+  $("#betModal").classList.remove("open");
+  toast("下注成功，可在「投注记录」中查看");
+});
+
+// 记录弹窗
+const RECORDS = [
+  null,
+  [{t:"2026-08-07 20:31:02", n:"半决赛 主队 VS 客队 · 主胜 2.00", v:"-1,000", c:"down"},
+   {t:"2026-08-07 21:10:44", n:"半决赛 队伍名称 VS 队伍名称 · 平局 2.00", v:"-5,000", c:"down"},
+   {t:"2026-08-07 23:02:19", n:"结算派奖 · 主胜 2.00", v:"+2,000", c:"up"}],
+  null, null
+];
+let rtab = 0;
+function renderRecords(){
+  const data = RECORDS[rtab];
+  $("#recordsBody").innerHTML = data
+    ? `<div class="rows">${data.map(r=>
+        `<div class="row"><b>${r.n}</b><span class="t">${r.t}</span><span class="v ${r.c}">${r.v}</span></div>`).join("")}</div>`
+    : `<div class="empty">
+         <svg width="96" height="80" viewBox="0 0 96 80" fill="none">
+           <rect x="18" y="14" width="52" height="52" rx="8" stroke="currentColor" stroke-width="3"/>
+           <circle cx="44" cy="38" r="14" stroke="currentColor" stroke-width="3"/>
+           <path d="M55 49 L72 66" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+         </svg>
+         <span>什么都没有</span>
+       </div>`;
+}
+$("#rtabs").addEventListener("click", e=>{
+  const t = e.target.closest(".rtab"); if(!t) return;
+  rtab = [...$("#rtabs").children].indexOf(t);
+  [...$("#rtabs").children].forEach(x=>x.classList.toggle("on", x===t));
+  renderRecords();
+});
+$("#openRecords").addEventListener("click", ()=>{ renderRecords(); $("#recordsModal").classList.add("open"); });
+$("#closeAct").addEventListener("click", ()=> toast("返回活动大厅"));
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click", e=>
+  e.target.closest(".overlay").classList.remove("open")));
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click", e=>{
+  if(e.target === o) o.classList.remove("open");
+}));
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape") document.querySelectorAll(".overlay.open").forEach(o=>o.classList.remove("open"));
+});
+
+// 时钟
+setInterval(()=>{
+  const d = new Date(Date.now() + (8*60 + new Date().getTimezoneOffset())*60000);
+  $("#clock").textContent = d.toTimeString().slice(0,8) + " (GMT+8)";
+}, 1000);
+
+renderList(); renderDetail();
+</script>
